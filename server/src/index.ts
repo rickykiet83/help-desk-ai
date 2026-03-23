@@ -1,7 +1,9 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
 import session from "express-session";
 import { healthRouter } from "./routes/health";
+import { prisma } from "./db";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -30,7 +32,8 @@ app.use(
 
 app.use("/api/health", healthRouter);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await prisma.$connect();
   console.log(`Server running on http://localhost:${PORT}`);
 });
 

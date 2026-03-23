@@ -6,7 +6,9 @@
       "Bash(bun install:*)",
       "Bash(bun run:*)",
       "Bash(echo \"EXIT: $?\")",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(bun add:*)",
+      "Bash(bunx prisma:*)"
     ]
   }
 }

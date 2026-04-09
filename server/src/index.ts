@@ -1,7 +1,8 @@
 import "dotenv/config";
 import express from "express";
 import cors from "cors";
-import session from "express-session";
+import { toNodeHandler } from "better-auth/node";
+import { auth } from "./auth";
 import { healthRouter } from "./routes/health";
 import { prisma } from "./db";
 
@@ -15,20 +16,10 @@ app.use(
   })
 );
 
-app.use(express.json());
+// Must be BEFORE express.json()
+app.all("/api/auth/*", toNodeHandler(auth));
 
-app.use(
-  session({
-    secret: process.env.SESSION_SECRET || "dev-secret-change-in-production",
-    resave: false,
-    saveUninitialized: false,
-    cookie: {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      maxAge: 1000 * 60 * 60 * 24, // 24 hours
-    },
-  })
-);
+app.use(express.json());
 
 app.use("/api/health", healthRouter);
 

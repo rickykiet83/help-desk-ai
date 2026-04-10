@@ -1,15 +1,7 @@
-import { Request, Response, NextFunction } from "express";
-import { fromNodeHeaders } from "better-auth/node";
-import { auth } from "../auth";
+import { NextFunction, Request, Response } from "express";
 
-declare global {
-  namespace Express {
-    interface Request {
-      user?: typeof auth.$Infer.Session.user;
-      session?: typeof auth.$Infer.Session.session;
-    }
-  }
-}
+import { auth } from "../lib/auth";
+import { fromNodeHeaders } from "better-auth/node";
 
 export async function requireAuth(
   req: Request,

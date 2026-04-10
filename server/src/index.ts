@@ -1,10 +1,12 @@
 import "dotenv/config";
-import express from "express";
+
+import { auth } from "./lib/auth";
 import cors from "cors";
-import { toNodeHandler } from "better-auth/node";
-import { auth } from "./auth";
+import express from "express";
 import { healthRouter } from "./routes/health";
 import { prisma } from "./db";
+import { requireAuth } from './middleware/require-auth';
+import { toNodeHandler } from "better-auth/node";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -17,11 +19,15 @@ app.use(
 );
 
 // Must be BEFORE express.json()
-app.all("/api/auth/*", toNodeHandler(auth));
+app.all("/api/auth/{*any}", (req, res, next) => toNodeHandler(auth)(req, res).catch(next));
 
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
+
+app.get("/api/me", requireAuth, (req, res) => {
+  res.json({ user: req.user, session: req.session })
+});
 
 app.listen(PORT, async () => {
   await prisma.$connect();

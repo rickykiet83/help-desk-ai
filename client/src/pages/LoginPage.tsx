@@ -1,76 +1,83 @@
-import { FormEvent, useState } from "react";
-
 import { signIn } from '../lib/auth-client';
-import { useNavigate } from "react-router-dom";
+import { useForm } from 'react-hook-form';
+import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { z } from 'zod';
+import { zodResolver } from '@hookform/resolvers/zod';
+
+const loginSchema = z.object({
+	email: z.email('Enter a valid email address'),
+	password: z.string().min(5, 'Password is required'),
+});
+
+type LoginFormData = z.infer<typeof loginSchema>;
 
 export function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+	const [serverError, setServerError] = useState('');
+	const navigate = useNavigate();
 
-  async function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
+	const {
+		register,
+		handleSubmit,
+		formState: { errors, isSubmitting },
+	} = useForm<LoginFormData>({
+		resolver: zodResolver(loginSchema),
+	});
 
-    const { error } = await signIn.email({ email, password });
+	async function onSubmit(data: LoginFormData) {
+		setServerError('');
+		const { error } = await signIn.email(data);
+		if (error) {
+			setServerError(error.message ?? 'Invalid email or password.');
+		} else {
+			navigate('/');
+		}
+	}
 
-    if (error) {
-      setError(error.message ?? "Invalid email or password.");
-      setLoading(false);
-    } else {
-      navigate("/");
-    }
-  }
+	return (
+		<div className='flex min-h-screen items-center justify-center bg-gray-50'>
+			<div className='w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm'>
+				<h1 className='mb-1 text-2xl font-bold text-gray-900'>Sign in</h1>
+				<p className='mb-6 text-sm text-gray-500'>Helpdesk — AI-powered ticket management</p>
 
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
-      <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm">
-        <h1 className="mb-1 text-2xl font-bold text-gray-900">Sign in</h1>
-        <p className="mb-6 text-sm text-gray-500">Helpdesk — AI-powered ticket management</p>
+				<form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+					<div>
+						<label htmlFor='email' className='mb-1 block text-sm font-medium text-gray-700'>
+							Email
+						</label>
+						<input
+							id='email'
+							type='email'
+							{...register('email')}
+							className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-1 ${errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+						/>
+						{errors.email && <p className='mt-1 text-xs text-red-500'>{errors.email.message}</p>}
+					</div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="mb-1 block text-sm font-medium text-gray-700">
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+					<div>
+						<label htmlFor='password' className='mb-1 block text-sm font-medium text-gray-700'>
+							Password
+						</label>
+						<input
+							id='password'
+							type='password'
+							{...register('password')}
+							className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-1 ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
+						/>
+						{errors.password && <p className='mt-1 text-xs text-red-500'>{errors.password.message}</p>}
+					</div>
 
-          <div>
-            <label htmlFor="password" className="mb-1 block text-sm font-medium text-gray-700">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
+					{serverError && <p className='text-sm text-red-500'>{serverError}</p>}
 
-          {error && <p className="text-sm text-red-500">{error}</p>}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
-          >
-            {loading ? "Signing in…" : "Sign in"}
-          </button>
-        </form>
-      </div>
-    </div>
-  );
+					<button
+						type='submit'
+						disabled={isSubmitting}
+						className='w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50'
+					>
+						{isSubmitting ? 'Signing in…' : 'Sign in'}
+					</button>
+				</form>
+			</div>
+		</div>
+	);
 }

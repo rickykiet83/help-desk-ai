@@ -147,6 +147,8 @@ The server webServer process receives env vars from `server/.env.test` (injected
 
 Rate limiting (`express-rate-limit`) is **production-only** (`NODE_ENV === "production"`), so it does not interfere with tests.
 
+**Writing tests:** Use the `e2e-test-writer` subagent. It has full context on the Playwright setup, test conventions, page object model patterns, and auth helpers for this project.
+
 ## Environment Variables
 
 Server (`server/.env`):

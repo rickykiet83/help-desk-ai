@@ -9,7 +9,7 @@ A full-stack ticket management system that uses AI (Claude API) to auto-classify
 | Layer      | Tech                                                                   |
 |------------|------------------------------------------------------------------------|
 | Runtime    | Bun                                                                    |
-| Frontend   | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui, React Router v6  |
+| Frontend   | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui, React Router v6, Axios, TanStack Query  |
 | Backend    | Express 4, TypeScript, Better Auth                                     |
 | Database   | PostgreSQL + Prisma ORM                                                |
 | AI         | Claude API (Anthropic)                                                 |
@@ -121,6 +121,16 @@ Components live in `client/src/components/ui/` and are copied in directly (not i
 - `label`
 
 To add a new component: `bunx shadcn@latest add <component>` from the `client/` directory. The `cn()` utility in `lib/utils.ts` merges Tailwind classes using `clsx` + `tailwind-merge`.
+
+## Data Fetching
+
+All client-side HTTP requests use **Axios** (`axios`) and all server state is managed with **TanStack Query** (`@tanstack/react-query`).
+
+- A shared axios instance with `withCredentials: true` is created per-page or in a shared module — do not use `fetch` directly.
+- Use `useQuery` for reads and `useMutation` for writes.
+- After a successful mutation, call `queryClient.invalidateQueries` to keep the cache in sync.
+- Catch axios errors with `axios.isAxiosError(err)` and extract the message from `err.response?.data?.error`. Map specific status codes (e.g. 409) to user-friendly messages before throwing.
+- The `QueryClientProvider` is mounted in `client/src/main.tsx`.
 
 ## E2E Testing
 

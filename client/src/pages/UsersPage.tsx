@@ -1,4 +1,3 @@
-import { Alert, AlertDescription } from "@/components/ui/alert";
 import {
 	Dialog,
 	DialogContent,
@@ -7,13 +6,16 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Loader2, UserPlus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UsersTable } from "./UsersTable";
 import type { User } from "./UsersTable";
+import axios from "axios";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,15 +27,57 @@ const createAgentSchema = z.object({
 });
 type CreateAgentFormData = z.infer<typeof createAgentSchema>;
 
+const api = axios.create({ withCredentials: true });
+
+async function fetchUsers(): Promise<User[]> {
+	const { data } = await api.get<{ users: User[] }>("/api/users");
+	return data.users;
+}
+
+async function createUser(data: CreateAgentFormData): Promise<void> {
+	try {
+		await api.post("/api/users", data);
+	} catch (err) {
+		if (axios.isAxiosError(err)) {
+			if (err.response?.status === 409) {
+				throw new Error("Email already exists, please choose a new one.");
+			}
+			throw new Error(err.response?.data?.error ?? "Failed to create user.");
+		}
+		throw err;
+	}
+}
+
+async function deleteUser(userId: string): Promise<void> {
+	await api.delete(`/api/users/${userId}`);
+}
+
 export function UsersPage() {
-	const [users, setUsers] = useState<User[]>([]);
-	const [isLoading, setIsLoading] = useState(true);
-	const [fetchError, setFetchError] = useState<string | null>(null);
-	const [deleteError, setDeleteError] = useState<string | null>(null);
-	const [deletingId, setDeletingId] = useState<string | null>(null);
+	const queryClient = useQueryClient();
 	const [confirmDeleteUser, setConfirmDeleteUser] = useState<User | null>(null);
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
-	const [createError, setCreateError] = useState<string | null>(null);
+
+	const {
+		data: users = [],
+		isLoading,
+		error: fetchError,
+	} = useQuery({ queryKey: ["users"], queryFn: fetchUsers });
+
+	const createMutation = useMutation({
+		mutationFn: createUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["users"] });
+			setShowCreateDialog(false);
+			reset();
+		},
+	});
+
+	const deleteMutation = useMutation({
+		mutationFn: deleteUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["users"] });
+		},
+	});
 
 	const {
 		register,
@@ -45,67 +89,18 @@ export function UsersPage() {
 		defaultValues: { name: "", email: "", password: "" },
 	});
 
-	async function fetchUsers() {
-		setIsLoading(true);
-		setFetchError(null);
-		const res = await fetch("/api/users", { credentials: "include" });
-		if (!res.ok) {
-			const body = await res.json().catch(() => ({}));
-			setFetchError(body.error ?? "Failed to load users.");
-		} else {
-			const body = await res.json();
-			setUsers(body.users);
-		}
-		setIsLoading(false);
-	}
-
-	useEffect(() => {
-		fetchUsers();
-	}, []);
-
-	async function onCreateAgent(data: CreateAgentFormData) {
-		setCreateError(null);
-		const res = await fetch("/api/users", {
-			method: "POST",
-			credentials: "include",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify(data),
-		});
-		if (!res.ok) {
-			const body = await res.json().catch(() => ({}));
-			setCreateError(body.error ?? "Failed to create user.");
-			return;
-		}
-		setShowCreateDialog(false);
-		reset();
-		await fetchUsers();
-	}
-
 	function handleDialogOpenChange(open: boolean) {
 		if (!open) {
 			reset();
-			setCreateError(null);
+			createMutation.reset();
 		}
 		setShowCreateDialog(open);
 	}
 
 	async function handleDelete() {
 		if (!confirmDeleteUser) return;
-		const userId = confirmDeleteUser.id;
 		setConfirmDeleteUser(null);
-		setDeleteError(null);
-		setDeletingId(userId);
-		const res = await fetch(`/api/users/${userId}`, {
-			method: "DELETE",
-			credentials: "include",
-		});
-		if (!res.ok) {
-			const body = await res.json().catch(() => ({}));
-			setDeleteError(body.error ?? "Failed to delete user.");
-		} else {
-			setUsers((prev) => prev.filter((u) => u.id !== userId));
-		}
-		setDeletingId(null);
+		deleteMutation.mutate(confirmDeleteUser.id);
 	}
 
 	return (
@@ -118,17 +113,17 @@ export function UsersPage() {
 				</Button>
 			</div>
 
-			{deleteError && (
+			{deleteMutation.error && (
 				<Alert variant="destructive" className="mb-4">
-					<AlertDescription>{deleteError}</AlertDescription>
+					<AlertDescription>{deleteMutation.error.message}</AlertDescription>
 				</Alert>
 			)}
 
 			<UsersTable
 				users={users}
 				isLoading={isLoading}
-				fetchError={fetchError}
-				deletingId={deletingId}
+				fetchError={fetchError?.message ?? null}
+				deletingId={deleteMutation.isPending ? (confirmDeleteUser?.id ?? null) : null}
 				onDeleteClick={setConfirmDeleteUser}
 			/>
 
@@ -143,7 +138,7 @@ export function UsersPage() {
 					</DialogHeader>
 
 					<form
-						onSubmit={handleSubmit(onCreateAgent)}
+						onSubmit={handleSubmit((data) => createMutation.mutateAsync(data))}
 						className="space-y-4 mt-2"
 					>
 						<div className="space-y-1">
@@ -191,9 +186,11 @@ export function UsersPage() {
 							</p>
 						</div>
 
-						{createError && (
+						{createMutation.error && (
 							<Alert variant="destructive">
-								<AlertDescription>{createError}</AlertDescription>
+								<AlertDescription>
+									{createMutation.error.message}
+								</AlertDescription>
 							</Alert>
 						)}
 
@@ -219,7 +216,9 @@ export function UsersPage() {
 
 			<Dialog
 				open={confirmDeleteUser !== null}
-				onOpenChange={(open) => { if (!open) setConfirmDeleteUser(null); }}
+				onOpenChange={(open) => {
+					if (!open) setConfirmDeleteUser(null);
+				}}
 			>
 				<DialogContent>
 					<DialogHeader>
@@ -236,16 +235,16 @@ export function UsersPage() {
 						<Button
 							variant="outline"
 							onClick={() => setConfirmDeleteUser(null)}
-							disabled={deletingId !== null}
+							disabled={deleteMutation.isPending}
 						>
 							Cancel
 						</Button>
 						<Button
 							variant="destructive"
 							onClick={handleDelete}
-							disabled={deletingId !== null}
+							disabled={deleteMutation.isPending}
 						>
-							{deletingId !== null && (
+							{deleteMutation.isPending && (
 								<Loader2 className="animate-spin mr-2 h-4 w-4" />
 							)}
 							Delete

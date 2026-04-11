@@ -8,3 +8,8 @@ declare global {
     }
   }
 }
+
+export interface AuthenticatedRequest extends Express.Request {
+  user: typeof auth.$Infer.Session.user;
+  session: typeof auth.$Infer.Session.session;
+}

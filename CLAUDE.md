@@ -28,23 +28,27 @@ helpdesk/
 │   │   ├── index.css             # Tailwind directives
 │   │   ├── components/
 │   │   │   ├── Layout.tsx        # Shared page shell (NavBar + Outlet)
-│   │   │   ├── NavBar.tsx
+│   │   │   ├── NavBar.tsx        # Shows "Users" link for admins
 │   │   │   ├── ProtectedRoute.tsx
+│   │   │   ├── AdminRoute.tsx    # Redirects non-admins to /
 │   │   │   └── ui/               # Shadcn/ui components (button, card, input, label, alert)
 │   │   ├── lib/
-│   │   │   ├── auth-client.ts    # Better Auth React client (signIn, signOut, useSession)
+│   │   │   ├── auth-client.ts    # Better Auth React client with inferAdditionalFields plugin
 │   │   │   └── utils.ts          # cn() helper for Tailwind class merging
 │   │   └── pages/
 │   │       ├── LoginPage.tsx
-│   │       └── HomePage.tsx
+│   │       ├── HomePage.tsx
+│   │       └── UsersPage.tsx     # Admin-only users management page
 │   ├── vite.config.ts            # Proxies /api/* → localhost:3001
 │   └── tailwind.config.js
 └── server/                       # Express backend (port 3001)
+    ├── prisma/
+    │   └── seed.ts               # Seeds admin user from SEED_ADMIN_EMAIL / SEED_ADMIN_PASSWORD env vars
     └── src/
         ├── index.ts              # App entry — cors, auth handler, routes
         ├── db.ts                 # Prisma client singleton
         ├── lib/
-        │   └── auth.ts           # Better Auth config (Prisma adapter, emailAndPassword)
+        │   └── auth.ts           # Better Auth config (Prisma adapter, emailAndPassword, role field)
         ├── middleware/
         │   └── require-auth.ts   # Calls auth.api.getSession(); attaches req.user / req.session
         ├── routes/
@@ -98,9 +102,10 @@ Auth is handled by **Better Auth** with email/password strategy. Self-registrati
 
 ### Client
 
-- `client/src/lib/auth-client.ts` — creates the Better Auth client via `createAuthClient()`, exporting `signIn`, `signOut`, and `useSession`.
+- `client/src/lib/auth-client.ts` — creates the Better Auth client via `createAuthClient()`, exporting `signIn`, `signOut`, and `useSession`. Uses the `inferAdditionalFields<typeof auth>()` plugin so that `session.user.role` is correctly typed.
 - `client/src/components/ProtectedRoute.tsx` — reads `useSession()`; shows a spinner while pending, redirects to `/login` if no session, renders `<Outlet />` otherwise.
-- Route layout in `App.tsx`: `/login` is public; all other routes are wrapped in `<ProtectedRoute>` → `<Layout>`.
+- `client/src/components/AdminRoute.tsx` — extends `ProtectedRoute` behavior; additionally redirects to `/` if `session.user.role !== "admin"`.
+- Route layout in `App.tsx`: `/login` is public; all other routes are wrapped in `<ProtectedRoute>` → `<Layout>`; admin-only routes are further wrapped in `<AdminRoute>`.
 
 ## Shadcn/ui
 

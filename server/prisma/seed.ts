@@ -4,10 +4,14 @@ import { Role } from '../src/generated/prisma/enums';
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "../src/db";
 
-const email = process.env.SEED_ADMIN_EMAIL ?? "admin@example.com";
-const password = process.env.SEED_ADMIN_PASSWORD ?? "password123";
+const email = process.env.SEED_ADMIN_EMAIL;
+const password = process.env.SEED_ADMIN_PASSWORD;
 
-async function seed() {
+if (!email || !password) {
+  throw new Error("SEED_ADMIN_EMAIL and SEED_ADMIN_PASSWORD must be set.");
+}
+
+async function seed(email: string, password: string) {
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     console.log(`User ${email} already exists — skipping.`);
@@ -41,7 +45,7 @@ async function seed() {
   console.log(`Created admin: ${user.email} (${user.id})`);
 }
 
-seed()
+seed(email, password)
   .catch((err) => {
     console.error(err);
     process.exit(1);

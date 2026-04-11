@@ -82,6 +82,7 @@ PORT=3001
 CLIENT_URL=http://localhost:5173
 TRUSTED_ORIGINS=http://localhost:5173
 BETTER_AUTH_URL=http://localhost:3001
+BETTER_AUTH_SECRET= "openssl rand -base64 32"
 DATABASE_URL=postgresql://username:password@localhost:5432/helpdesk
 ANTHROPIC_API_KEY=sk-ant-your-api-key-here
 EMAIL_SERVICE=sendgrid

@@ -1,10 +1,11 @@
+import { Role } from '../generated/prisma/enums';
 import { betterAuth } from "better-auth";
 import { prisma } from "../db";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 
 export const auth = betterAuth({
   basePath: '/api/auth',
-  trustedOrigins: [process.env.TRUSTED_ORIGINS || "http://localhost:5173"],
+  trustedOrigins: process.env.TRUSTED_ORIGINS?.split(",") ?? [],
   database: prismaAdapter(prisma, {
     provider: "postgresql",
   }),
@@ -17,7 +18,7 @@ export const auth = betterAuth({
       role: {
         type: "string",
         required: true,
-        defaultValue: "agent",
+        defaultValue: Role.agent,
         input: false,
       },
     },

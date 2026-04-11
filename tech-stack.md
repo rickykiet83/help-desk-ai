@@ -2,22 +2,24 @@
 
 ## Frontend
 
-- React with TypeScript
+- React 18 with TypeScript
+- Vite (dev server, port 5173)
 - Tailwind CSS
-- React Router
+- Shadcn/ui component library
+- React Router v6
 
 ## Backend
 
-- Node.js with Express and TypeScript
-- Database sessions for authentication
+- Bun runtime
+- Express 4 with TypeScript (port 3001)
+- Better Auth — session-based authentication (email/password, sign-up disabled)
+  - Server: `better-auth` with Prisma adapter
+  - Client: `better-auth/react` (`createAuthClient`)
 
 ## Database
 
 - PostgreSQL
-
-## ORM
-
-- Prisma
+- Prisma ORM (client generated to `server/src/generated/prisma/`)
 
 ## AI
 

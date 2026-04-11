@@ -6,33 +6,52 @@ A full-stack ticket management system that uses AI (Claude API) to auto-classify
 
 ## Tech Stack
 
-| Layer      | Tech                                      |
-|------------|-------------------------------------------|
-| Runtime    | Bun                                       |
-| Frontend   | React 18, TypeScript, Vite, Tailwind CSS, React Router v6 |
-| Backend    | Express 4, TypeScript, express-session    |
-| Database   | PostgreSQL + Prisma ORM                   |
-| AI         | Claude API (Anthropic)                    |
-| Email      | SendGrid or Mailgun                       |
-| Deployment | Docker + cloud provider                   |
+| Layer      | Tech                                                                   |
+|------------|------------------------------------------------------------------------|
+| Runtime    | Bun                                                                    |
+| Frontend   | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui, React Router v6  |
+| Backend    | Express 4, TypeScript, Better Auth                                     |
+| Database   | PostgreSQL + Prisma ORM                                                |
+| AI         | Claude API (Anthropic)                                                 |
+| Email      | SendGrid or Mailgun                                                    |
+| Deployment | Docker + cloud provider                                                |
 
 ## Monorepo Structure
 
 ```
 helpdesk/
-├── package.json          # Bun workspace root (workspaces: ["client", "server"])
-├── client/               # React + Vite frontend (port 5173)
+├── package.json                  # Bun workspace root (workspaces: ["client", "server"])
+├── client/                       # React + Vite frontend (port 5173)
 │   ├── src/
-│   │   ├── App.tsx
+│   │   ├── App.tsx               # Route definitions
 │   │   ├── main.tsx
-│   │   └── index.css     # Tailwind directives
-│   ├── vite.config.ts    # Proxies /api/* → localhost:3001
+│   │   ├── index.css             # Tailwind directives
+│   │   ├── components/
+│   │   │   ├── Layout.tsx        # Shared page shell (NavBar + Outlet)
+│   │   │   ├── NavBar.tsx
+│   │   │   ├── ProtectedRoute.tsx
+│   │   │   └── ui/               # Shadcn/ui components (button, card, input, label, alert)
+│   │   ├── lib/
+│   │   │   ├── auth-client.ts    # Better Auth React client (signIn, signOut, useSession)
+│   │   │   └── utils.ts          # cn() helper for Tailwind class merging
+│   │   └── pages/
+│   │       ├── LoginPage.tsx
+│   │       └── HomePage.tsx
+│   ├── vite.config.ts            # Proxies /api/* → localhost:3001
 │   └── tailwind.config.js
-└── server/               # Express backend (port 3001)
+└── server/                       # Express backend (port 3001)
     └── src/
-        ├── index.ts      # App entry point — cors, session, routes
-        └── routes/
-            └── health.ts # GET /api/health
+        ├── index.ts              # App entry — cors, auth handler, routes
+        ├── db.ts                 # Prisma client singleton
+        ├── lib/
+        │   └── auth.ts           # Better Auth config (Prisma adapter, emailAndPassword)
+        ├── middleware/
+        │   └── require-auth.ts   # Calls auth.api.getSession(); attaches req.user / req.session
+        ├── routes/
+        │   └── health.ts         # GET /api/health
+        ├── types/
+        │   └── express.d.ts      # Augments Express Request with user and session fields
+        └── generated/prisma/     # Generated Prisma client output
 ```
 
 ## Commands
@@ -51,8 +70,8 @@ cd client && bun run dev   # Vite HMR dev server
 
 ## Ports
 
-- Client: http://localhost:5173
-- Server: http://localhost:3001
+- Client: <http://localhost:5173>
+- Server: <http://localhost:3001>
 - Vite proxies `/api/*` to the server, so no CORS issues in dev
 
 ## Domain Model
@@ -62,20 +81,48 @@ cd client && bun run dev   # Vite HMR dev server
 **Ticket categories:** General Question, Technical Question, Refund Request
 
 **User roles:**
+
 - `admin` — seeded at deploy time; can create/manage agents
 - `agent` — created by admin; can view and manage tickets
 
-## Auth
+## Authentication
 
-Session-based authentication via `express-session`. Session cookie is `httpOnly`, `secure` in production only.
+Auth is handled by **Better Auth** with email/password strategy. Self-registration is disabled — agents are created by admins only.
+
+### Server
+
+- `server/src/lib/auth.ts` — configures Better Auth with the Prisma adapter, `disableSignUp: true`, and a custom `role` field (`"agent"` by default) on the user model.
+- `server/src/index.ts` — mounts Better Auth at `/api/auth/*` via `toNodeHandler(auth)`. **Must be registered before `express.json()`.**
+- `server/src/middleware/require-auth.ts` — calls `auth.api.getSession()` with request headers; attaches `req.user` and `req.session`, or returns 401.
+- `server/src/types/express.d.ts` — augments the Express `Request` type with `user` and `session` typed from `auth.$Infer.Session`.
+
+### Client
+
+- `client/src/lib/auth-client.ts` — creates the Better Auth client via `createAuthClient()`, exporting `signIn`, `signOut`, and `useSession`.
+- `client/src/components/ProtectedRoute.tsx` — reads `useSession()`; shows a spinner while pending, redirects to `/login` if no session, renders `<Outlet />` otherwise.
+- Route layout in `App.tsx`: `/login` is public; all other routes are wrapped in `<ProtectedRoute>` → `<Layout>`.
+
+## Shadcn/ui
+
+Components live in `client/src/components/ui/` and are copied in directly (not imported from a package). Currently installed:
+
+- `alert`
+- `button`
+- `card`
+- `input`
+- `label`
+
+To add a new component: `bunx shadcn@latest add <component>` from the `client/` directory. The `cn()` utility in `lib/utils.ts` merges Tailwind classes using `clsx` + `tailwind-merge`.
 
 ## Environment Variables
 
 Server (`server/.env`):
-```
+
+```env
 PORT=3001
 CLIENT_URL=http://localhost:5173
-SESSION_SECRET=your-secret-here
+TRUSTED_ORIGINS=http://localhost:5173
+BETTER_AUTH_URL=http://localhost:3001
 DATABASE_URL=postgresql://user:pass@localhost:5432/helpdesk
 ANTHROPIC_API_KEY=sk-ant-...
 ```

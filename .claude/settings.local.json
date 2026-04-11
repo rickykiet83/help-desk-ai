@@ -8,7 +8,8 @@
       "Bash(echo \"EXIT: $?\")",
       "Bash(xargs kill:*)",
       "Bash(bun add:*)",
-      "Bash(bunx prisma:*)"
+      "Bash(bunx prisma:*)",
+      "Bash(bun remove:*)"
     ]
   }
 }

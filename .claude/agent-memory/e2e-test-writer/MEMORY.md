@@ -1,0 +1,3 @@
+- [Selector patterns for Helpdesk UI](feedback_selector_patterns.md) — heading level, field error locators, browser vs Zod email validation
+- [Test server isolation](feedback_server_isolation.md) — reuseExistingServer:false required for backend to avoid dev DB pollution
+- [E2E test infrastructure and credentials](project_e2e_setup.md) — seeded DBs, credentials, file locations, why agent must be seeded via Prisma

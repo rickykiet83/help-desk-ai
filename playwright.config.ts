@@ -51,7 +51,9 @@ export default defineConfig({
       command: "bun run --watch src/index.ts",
       cwd: path.join(__dirname, "server"),
       url: "http://localhost:3001/api/health",
-      reuseExistingServer: !process.env.CI,
+      // Always start a fresh server so tests run against the test database,
+      // not a pre-existing dev server connected to the dev database.
+      reuseExistingServer: false,
       env: testEnv,
     },
     {

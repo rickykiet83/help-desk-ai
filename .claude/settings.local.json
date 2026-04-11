@@ -9,7 +9,8 @@
       "Bash(xargs kill:*)",
       "Bash(bun add:*)",
       "Bash(bunx prisma:*)",
-      "Bash(bun remove:*)"
+      "Bash(bun remove:*)",
+      "Bash(npx shadcn@latest:*)"
     ]
   }
 }

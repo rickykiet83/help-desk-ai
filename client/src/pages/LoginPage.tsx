@@ -1,6 +1,13 @@
-import { signIn } from '../lib/auth-client';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Navigate, useNavigate } from 'react-router-dom';
+import { signIn, useSession } from '../lib/auth-client';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Loader2 } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -15,6 +22,7 @@ type LoginFormData = z.infer<typeof loginSchema>;
 export function LoginPage() {
 	const [serverError, setServerError] = useState('');
 	const navigate = useNavigate();
+	const { data: session, isPending } = useSession();
 
 	const {
 		register,
@@ -22,7 +30,21 @@ export function LoginPage() {
 		formState: { errors, isSubmitting },
 	} = useForm<LoginFormData>({
 		resolver: zodResolver(loginSchema),
+		defaultValues: { email: '', password: '' },
 	});
+
+	if (isPending) {
+		return (
+			<div className='flex items-center justify-center h-screen text-muted-foreground'>
+				<Loader2 className='animate-spin mr-2 h-5 w-5' />
+				Loading...
+			</div>
+		);
+	}
+
+	if (session) {
+		return <Navigate to='/' replace />;
+	}
 
 	async function onSubmit(data: LoginFormData) {
 		setServerError('');
@@ -35,49 +57,49 @@ export function LoginPage() {
 	}
 
 	return (
-		<div className='flex min-h-screen items-center justify-center bg-gray-50'>
-			<div className='w-full max-w-sm rounded-xl border border-gray-200 bg-white p-8 shadow-sm'>
-				<h1 className='mb-1 text-2xl font-bold text-gray-900'>Sign in</h1>
-				<p className='mb-6 text-sm text-gray-500'>Helpdesk — AI-powered ticket management</p>
+		<div className='flex min-h-screen items-center justify-center bg-muted/40'>
+			<Card className='w-full max-w-sm'>
+				<CardHeader>
+					<CardTitle className='text-2xl'>Sign in</CardTitle>
+					<CardDescription>Helpdesk — AI-powered ticket management</CardDescription>
+				</CardHeader>
+				<CardContent>
+					<form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
+						<div className='space-y-1'>
+							<Label htmlFor='email'>Email</Label>
+							<Input
+								id='email'
+								type='email'
+								{...register('email')}
+								className={errors.email ? 'border-destructive focus-visible:ring-destructive' : ''}
+							/>
+							{errors.email && <p className='text-xs text-destructive'>{errors.email.message}</p>}
+						</div>
 
-				<form onSubmit={handleSubmit(onSubmit)} className='space-y-4'>
-					<div>
-						<label htmlFor='email' className='mb-1 block text-sm font-medium text-gray-700'>
-							Email
-						</label>
-						<input
-							id='email'
-							type='email'
-							{...register('email')}
-							className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-1 ${errors.email ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
-						/>
-						{errors.email && <p className='mt-1 text-xs text-red-500'>{errors.email.message}</p>}
-					</div>
+						<div className='space-y-1'>
+							<Label htmlFor='password'>Password</Label>
+							<Input
+								id='password'
+								type='password'
+								{...register('password')}
+								className={errors.password ? 'border-destructive focus-visible:ring-destructive' : ''}
+							/>
+							{errors.password && <p className='text-xs text-destructive'>{errors.password.message}</p>}
+						</div>
 
-					<div>
-						<label htmlFor='password' className='mb-1 block text-sm font-medium text-gray-700'>
-							Password
-						</label>
-						<input
-							id='password'
-							type='password'
-							{...register('password')}
-							className={`w-full rounded-md border px-3 py-2 text-sm outline-none focus:ring-1 ${errors.password ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-blue-500 focus:ring-blue-500'}`}
-						/>
-						{errors.password && <p className='mt-1 text-xs text-red-500'>{errors.password.message}</p>}
-					</div>
+						{serverError && (
+							<Alert variant='destructive'>
+								<AlertDescription>{serverError}</AlertDescription>
+							</Alert>
+						)}
 
-					{serverError && <p className='text-sm text-red-500'>{serverError}</p>}
-
-					<button
-						type='submit'
-						disabled={isSubmitting}
-						className='w-full rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50'
-					>
-						{isSubmitting ? 'Signing in…' : 'Sign in'}
-					</button>
-				</form>
-			</div>
+						<Button type='submit' disabled={isSubmitting} className='w-full'>
+							{isSubmitting && <Loader2 className='animate-spin' />}
+							{isSubmitting ? 'Signing in…' : 'Sign in'}
+						</Button>
+					</form>
+				</CardContent>
+			</Card>
 		</div>
 	);
 }

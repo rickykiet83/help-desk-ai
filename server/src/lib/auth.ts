@@ -1,4 +1,5 @@
 import { Role } from '../generated/prisma/enums';
+import { admin } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { prisma } from "../db";
 import { prismaAdapter } from "better-auth/adapters/prisma";
@@ -12,7 +13,7 @@ export const auth = betterAuth({
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    minPasswordLength: 12,
+    minPasswordLength: 6,
   },
   user: {
     additionalFields: {
@@ -24,4 +25,10 @@ export const auth = betterAuth({
       },
     },
   },
+  plugins: [
+    admin({
+      adminRoles: ["admin"],
+      defaultRole: Role.agent,
+    }),
+  ],
 });

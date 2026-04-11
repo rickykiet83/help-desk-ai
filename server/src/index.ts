@@ -1,20 +1,23 @@
 import "dotenv/config";
 
+import type { AuthenticatedRequest } from './types/express';
+import { auth } from "./lib/auth";
+import cors from "cors";
+import express from "express";
+import { healthRouter } from "./routes/health";
+import { usersRouter } from "./routes/users";
+import helmet from "helmet";
+import { prisma } from "./db";
+import rateLimit from "express-rate-limit";
+import { requireAuth } from './middleware/require-auth';
+import { requireAdmin } from './middleware/require-admin';
+import { toNodeHandler } from "better-auth/node";
+
 if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
   console.error("FATAL: BETTER_AUTH_SECRET is missing or too short. Refusing to start.");
   process.exit(1);
 }
 
-import { auth } from "./lib/auth";
-import cors from "cors";
-import express from "express";
-import helmet from "helmet";
-import rateLimit from "express-rate-limit";
-import { healthRouter } from "./routes/health";
-import { prisma } from "./db";
-import { requireAuth } from './middleware/require-auth';
-import type { AuthenticatedRequest } from './types/express';
-import { toNodeHandler } from "better-auth/node";
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -45,11 +48,12 @@ app.all("/api/auth/{*any}", (req, res, next) => toNodeHandler(auth)(req, res).ca
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
+app.use("/api/users", requireAuth as express.RequestHandler, requireAdmin as express.RequestHandler, usersRouter);
 
-app.get("/api/me", requireAuth, (req: AuthenticatedRequest, res) => {
+app.get("/api/me", requireAuth, ((req: AuthenticatedRequest, res) => {
   const { id, email, name, role } = req.user;
   res.json({ user: { id, email, name, role } });
-});
+}) as express.RequestHandler);
 
 app.listen(PORT, async () => {
   await prisma.$connect();

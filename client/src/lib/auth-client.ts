@@ -1,7 +1,13 @@
 import { createAuthClient } from "better-auth/react";
-import { inferAdditionalFields } from "better-auth/client/plugins";
+import { adminClient, inferAdditionalFields } from "better-auth/client/plugins";
 import type { auth } from "../../../server/src/lib/auth";
 
-export const { signIn, signOut, useSession } = createAuthClient({
-  plugins: [inferAdditionalFields<typeof auth>()],
+const authClient = createAuthClient({
+  plugins: [
+    inferAdditionalFields<typeof auth>(),
+    adminClient(),
+  ],
 });
+
+export const { signIn, signOut, useSession } = authClient;
+export const { admin } = authClient;

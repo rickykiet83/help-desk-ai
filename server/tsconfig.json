@@ -1,15 +1,18 @@
 {
-  "compilerOptions": {
-    "target": "ES2022",
-    "lib": ["ES2022"],
-    "module": "ESNext",
-    "moduleResolution": "bundler",
-    "strict": true,
-    "outDir": "dist",
-    "rootDir": "src",
-    "esModuleInterop": true,
-    "skipLibCheck": true,
-    "types": ["node"]
-  },
-  "include": ["src", "prisma.config.ts"]
+	"compilerOptions": {
+		"target": "ES2022",
+		"lib": ["ES2022"],
+		"module": "ESNext",
+		"moduleResolution": "bundler",
+		"strict": true,
+		"outDir": "dist",
+		"rootDir": "src",
+		"esModuleInterop": true,
+		"skipLibCheck": true,
+		"types": ["node", "bun"],
+		"paths": {
+			"@/*": ["./src/*"]
+		}
+	},
+	"include": ["src", "prisma.config.ts"]
 }

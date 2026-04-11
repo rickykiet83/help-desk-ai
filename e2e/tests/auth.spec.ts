@@ -74,7 +74,7 @@ test.describe("Login — client-side validation", () => {
 
     // Password error
     await expect(loginPage.passwordError).toBeVisible();
-    await expect(loginPage.passwordError).toContainText(/12 characters/i);
+    await expect(loginPage.passwordError).toContainText(/6 characters/i);
 
     // URL must stay on /login
     await expect(page).toHaveURL("/login");
@@ -94,7 +94,7 @@ test.describe("Login — client-side validation", () => {
     await expect(page).toHaveURL("/login");
   });
 
-  test("password shorter than 12 characters shows password validation error", async ({
+  test("password shorter than 6 characters shows password validation error", async ({
     page,
   }) => {
     const loginPage = new LoginPage(page);
@@ -105,7 +105,7 @@ test.describe("Login — client-side validation", () => {
     await loginPage.submitButton.click();
 
     await expect(loginPage.passwordError).toBeVisible();
-    await expect(loginPage.passwordError).toContainText(/12 characters/i);
+    await expect(loginPage.passwordError).toContainText(/6 characters/i);
     await expect(page).toHaveURL("/login");
   });
 });

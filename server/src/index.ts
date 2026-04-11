@@ -13,6 +13,7 @@ import rateLimit from "express-rate-limit";
 import { healthRouter } from "./routes/health";
 import { prisma } from "./db";
 import { requireAuth } from './middleware/require-auth';
+import type { AuthenticatedRequest } from './types/express';
 import { toNodeHandler } from "better-auth/node";
 
 const app = express();
@@ -27,15 +28,16 @@ app.use(
   })
 );
 
-const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 20,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { error: "Too many requests, please try again later." },
-});
-
-app.use("/api/auth", authLimiter);
+if (process.env.NODE_ENV === "production") {
+  const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests, please try again later." },
+  });
+  app.use("/api/auth", authLimiter);
+}
 
 // Must be BEFORE express.json()
 app.all("/api/auth/{*any}", (req, res, next) => toNodeHandler(auth)(req, res).catch(next));
@@ -44,8 +46,8 @@ app.use(express.json());
 
 app.use("/api/health", healthRouter);
 
-app.get("/api/me", requireAuth, (req, res) => {
-  const { id, email, name, role } = req.user!;
+app.get("/api/me", requireAuth, (req: AuthenticatedRequest, res) => {
+  const { id, email, name, role } = req.user;
   res.json({ user: { id, email, name, role } });
 });
 

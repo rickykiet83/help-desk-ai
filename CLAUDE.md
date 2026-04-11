@@ -70,6 +70,9 @@ bun run dev
 # Run individually
 cd server && bun run dev   # Express with --watch (hot reload)
 cd client && bun run dev   # Vite HMR dev server
+
+# E2E tests
+bun test:e2e               # Run Playwright tests (resets test DB, seeds, starts both servers)
 ```
 
 ## Ports
@@ -119,6 +122,31 @@ Components live in `client/src/components/ui/` and are copied in directly (not i
 
 To add a new component: `bunx shadcn@latest add <component>` from the `client/` directory. The `cn()` utility in `lib/utils.ts` merges Tailwind classes using `clsx` + `tailwind-merge`.
 
+## E2E Testing
+
+Playwright is configured at the repo root. Tests live in `e2e/`.
+
+```
+helpdesk/
+├── playwright.config.ts          # Root config — baseURL, webServer, globalSetup
+├── tsconfig.json                 # Root TS config scoped to e2e/ and playwright.config.ts
+└── e2e/
+    ├── global-setup.ts           # Resets + migrates + seeds helpdesk_test before each run
+    └── global-teardown.ts        # Placeholder
+```
+
+**Test database:** `helpdesk_test` — a separate database in the same Docker PostgreSQL container as dev. Created once with:
+
+```bash
+docker exec helpdesk-db-1 createdb -U helpdesk helpdesk_test
+```
+
+The global setup runs `prisma migrate reset --force` (with `PRISMA_USER_CONSENT_FOR_DANGEROUS_AI_ACTION`) then seeds an admin user (`admin@test.com` / `testpassword123`) from `server/.env.test`.
+
+The server webServer process receives env vars from `server/.env.test` (injected by `playwright.config.ts`), so it connects to `helpdesk_test` and never touches dev data.
+
+Rate limiting (`express-rate-limit`) is **production-only** (`NODE_ENV === "production"`), so it does not interfere with tests.
+
 ## Environment Variables
 
 Server (`server/.env`):
@@ -126,8 +154,11 @@ Server (`server/.env`):
 ```env
 PORT=3001
 CLIENT_URL=http://localhost:5173
-TRUSTED_ORIGINS=http://localhost:5173
 BETTER_AUTH_URL=http://localhost:3001
 DATABASE_URL=postgresql://user:pass@localhost:5432/helpdesk
 ANTHROPIC_API_KEY=sk-ant-...
+BETTER_AUTH_SECRET=""
+SEED_ADMIN_EMAIL="admin@example.com"
+SEED_ADMIN_PASSWORD="password123"
+TRUSTED_ORIGINS="http://localhost:5173"
 ```

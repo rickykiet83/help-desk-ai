@@ -70,6 +70,30 @@ usersRouter.post("/", (async (req, res) => {
   res.status(201).json({ message: "User created" });
 }) as RequestHandler);
 
+// PATCH /api/users/:id — update a user's name
+usersRouter.patch("/:id", (async (req: Request, res) => {
+  const id = req.params["id"] as string;
+  const { name } = req.body as { name?: string };
+
+  if (!name || !name.trim()) {
+    res.status(400).json({ error: "Name is required" });
+    return;
+  }
+
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+
+  const updated = await prisma.user.update({
+    where: { id },
+    data: { name: name.trim(), updatedAt: new Date() },
+    select: { id: true, name: true, email: true, role: true, createdAt: true },
+  });
+  res.json({ user: updated });
+}) as RequestHandler);
+
 // DELETE /api/users/:id — delete a non-admin user
 usersRouter.delete("/:id", (async (req: Request, res) => {
   const id = req.params["id"] as string;

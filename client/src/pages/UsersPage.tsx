@@ -21,6 +21,11 @@ const createAgentSchema = z.object({
 });
 type CreateAgentFormData = z.infer<typeof createAgentSchema>;
 
+const editAgentSchema = z.object({
+	name: z.string().min(1, "Name is required"),
+});
+type EditAgentFormData = z.infer<typeof editAgentSchema>;
+
 const api = axios.create({ withCredentials: true});
 
 async function fetchUsers(): Promise<User[]> {
@@ -42,6 +47,10 @@ async function createUser(data: CreateAgentFormData): Promise<void> {
 	}
 }
 
+async function updateUser(userId: string, data: EditAgentFormData): Promise<void> {
+	await api.patch(`/api/users/${userId}`, data);
+}
+
 async function deleteUser(userId: string): Promise<void> {
 	await api.delete(`/api/users/${userId}`);
 }
@@ -50,6 +59,7 @@ export function UsersPage() {
 	const queryClient = useQueryClient();
 	const [confirmDeleteUser, setConfirmDeleteUser] = useState<User | null>(null);
 	const [showCreateDialog, setShowCreateDialog] = useState(false);
+	const [editUser, setEditUser] = useState<User | null>(null);
 
 	const {
 		data: users = [],
@@ -73,6 +83,16 @@ export function UsersPage() {
 		},
 	});
 
+	const editMutation = useMutation({
+		mutationFn: ({ id, data }: { id: string; data: EditAgentFormData }) =>
+			updateUser(id, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["users"] });
+			setEditUser(null);
+			resetEdit();
+		},
+	});
+
 	const {
 		register,
 		handleSubmit,
@@ -83,12 +103,34 @@ export function UsersPage() {
 		defaultValues: { name: "", email: "", password: "" },
 	});
 
+	const {
+		register: registerEdit,
+		handleSubmit: handleSubmitEdit,
+		reset: resetEdit,
+		formState: { errors: editErrors, isSubmitting: isEditSubmitting },
+	} = useForm<EditAgentFormData>({
+		resolver: zodResolver(editAgentSchema),
+	});
+
 	function handleDialogOpenChange(open: boolean) {
 		if (!open) {
 			reset();
 			createMutation.reset();
 		}
 		setShowCreateDialog(open);
+	}
+
+	function handleEditOpenChange(open: boolean) {
+		if (!open) {
+			resetEdit();
+			editMutation.reset();
+			setEditUser(null);
+		}
+	}
+
+	function handleEditClick(user: User) {
+		setEditUser(user);
+		resetEdit({ name: user.name });
 	}
 
 	async function handleDelete() {
@@ -119,6 +161,7 @@ export function UsersPage() {
 				fetchError={fetchError?.message ?? null}
 				deletingId={deleteMutation.isPending ? (confirmDeleteUser?.id ?? null) : null}
 				onDeleteClick={setConfirmDeleteUser}
+				onEditClick={handleEditClick}
 			/>
 
 			<AppDialog
@@ -198,6 +241,55 @@ export function UsersPage() {
 								<Loader2 className="animate-spin mr-2 h-4 w-4" />
 							)}
 							{isSubmitting ? "Creating..." : "Create Agent"}
+						</Button>
+					</div>
+				</form>
+			</AppDialog>
+
+			<AppDialog
+				open={editUser !== null}
+				onOpenChange={handleEditOpenChange}
+				title="Edit user"
+				description="Update the user's display name."
+			>
+				<form
+					onSubmit={handleSubmitEdit((data) =>
+						editMutation.mutateAsync({ id: editUser!.id, data })
+					)}
+					className="space-y-4 mt-2"
+				>
+					<div className="space-y-1">
+						<Label htmlFor="edit-name">Name</Label>
+						<Input
+							id="edit-name"
+							{...registerEdit("name")}
+							aria-invalid={!!editErrors.name}
+						/>
+						{editErrors.name && (
+							<p className="text-xs text-destructive">{editErrors.name.message}</p>
+						)}
+					</div>
+
+					{editMutation.error && (
+						<Alert variant="destructive">
+							<AlertDescription>{editMutation.error.message}</AlertDescription>
+						</Alert>
+					)}
+
+					<div className="flex justify-end gap-2 pt-2">
+						<Button
+							type="button"
+							variant="outline"
+							onClick={() => handleEditOpenChange(false)}
+							disabled={isEditSubmitting}
+						>
+							Cancel
+						</Button>
+						<Button type="submit" disabled={isEditSubmitting}>
+							{isEditSubmitting && (
+								<Loader2 className="animate-spin mr-2 h-4 w-4" />
+							)}
+							{isEditSubmitting ? "Saving..." : "Save"}
 						</Button>
 					</div>
 				</form>

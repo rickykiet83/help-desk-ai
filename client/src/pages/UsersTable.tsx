@@ -1,7 +1,5 @@
-import { Loader2, Pencil, Trash2 } from "lucide-react";
-
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Button } from "@/components/ui/button";
+import { Loader2, Pencil, Trash2 } from "lucide-react";
 import {
 	Table,
 	TableBody,
@@ -10,6 +8,8 @@ import {
 	TableHeader,
 	TableRow,
 } from "@/components/ui/table";
+
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type User = {
@@ -56,7 +56,7 @@ export function UsersTable({
 						<TableHead>Email</TableHead>
 						<TableHead>Role</TableHead>
 						<TableHead>Joined</TableHead>
-						<TableHead />
+						<TableHead>Action</TableHead>
 					</TableRow>
 				</TableHeader>
 				<TableBody>

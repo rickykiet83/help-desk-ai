@@ -9,7 +9,7 @@ A full-stack ticket management system that uses AI (Claude API) to auto-classify
 | Layer      | Tech                                                                   |
 |------------|------------------------------------------------------------------------|
 | Runtime    | Bun                                                                    |
-| Frontend   | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui, React Router v6, Axios, TanStack Query  |
+| Frontend   | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui, React Router v6, Axios, TanStack Query, React Hook Form + Zod  |
 | Backend    | Express 4, TypeScript, Better Auth                                     |
 | Database   | PostgreSQL + Prisma ORM                                                |
 | AI         | Claude API (Anthropic)                                                 |
@@ -20,7 +20,11 @@ A full-stack ticket management system that uses AI (Claude API) to auto-classify
 
 ```
 helpdesk/
-├── package.json                  # Bun workspace root (workspaces: ["client", "server"])
+├── package.json                  # Bun workspace root (workspaces: ["client", "server", "core"])
+├── core/                         # Shared package (@helpdesk/core) — Zod schemas and inferred types
+│   └── src/
+│       ├── index.ts
+│       └── schemas/              # One file per domain (e.g. users.ts)
 ├── client/                       # React + Vite frontend (port 5173)
 │   ├── src/
 │   │   ├── App.tsx               # Route definitions
@@ -92,6 +96,8 @@ bun test:e2e               # Run Playwright tests (resets test DB, seeds, starts
 - `admin` — seeded at deploy time; can create/manage agents
 - `agent` — created by admin; can view and manage tickets
 
+Always use the generated `Role` enum from `@/generated/prisma/enums` instead of hardcoding role strings (e.g. `Role.agent`, not `"agent"`).
+
 ## Authentication
 
 Auth is handled by **Better Auth** with email/password strategy. Self-registration is disabled — agents are created by admins only.
@@ -121,6 +127,32 @@ Components live in `client/src/components/ui/` and are copied in directly (not i
 - `label`
 
 To add a new component: `bunx shadcn@latest add <component>` from the `client/` directory. The `cn()` utility in `lib/utils.ts` merges Tailwind classes using `clsx` + `tailwind-merge`.
+
+## Data Validation
+
+Use **Zod** for all runtime data validation — on both client and server.
+
+- Define schemas with `z.object(...)` and infer TypeScript types with `z.infer<typeof schema>`.
+- **Shared schemas belong in `core/src/schemas/`** (package `@helpdesk/core`) and are imported by both client and server. Never duplicate a schema — if it's used in more than one package, it lives in `core`.
+- On the server, validate request bodies in route handlers before passing data to the database.
+
+All client-side forms use **React Hook Form** (`react-hook-form`) with the Zod resolver (`@hookform/resolvers/zod`). Never use uncontrolled `useState` for form fields.
+
+```tsx
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+
+const schema = z.object({
+  name: z.string().min(1, "Name is required"),
+  email: z.string().email("Invalid email"),
+});
+type FormData = z.infer<typeof schema>;
+
+const { register, handleSubmit, formState: { errors } } = useForm<FormData>({
+  resolver: zodResolver(schema),
+});
+```
 
 ## Data Fetching
 

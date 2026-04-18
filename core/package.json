@@ -1,0 +1,10 @@
+{
+  "name": "@helpdesk/core",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "peerDependencies": {
+    "zod": "^4.0.0"
+  }
+}

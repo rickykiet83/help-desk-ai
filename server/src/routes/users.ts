@@ -1,5 +1,7 @@
 import type { Request, RequestHandler } from "express";
+import { createUserSchema, updateUserSchema } from "@helpdesk/core";
 
+import { Role } from "@/generated/prisma/enums";
 import { Router } from "express";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "../db";
@@ -17,20 +19,13 @@ usersRouter.get("/", (async (_req, res) => {
 
 // POST /api/users — create a new agent
 usersRouter.post("/", (async (req, res) => {
-  const { name, email, password } = req.body as {
-    name?: string;
-    email?: string;
-    password?: string;
-  };
+  const result = createUserSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ error: result.error.issues[0]?.message ?? "Invalid input" });
+    return;
+  }
 
-  if (!name || !email || !password) {
-    res.status(400).json({ error: "name, email, and password are required" });
-    return;
-  }
-  if (password.length < 6) {
-    res.status(400).json({ error: "Password must be at least 6 characters" });
-    return;
-  }
+  const { name, email, password } = result.data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -49,7 +44,7 @@ usersRouter.post("/", (async (req, res) => {
         name,
         email,
         emailVerified: false,
-        role: "agent",
+        role: Role.agent,
         createdAt: now,
         updatedAt: now,
       },
@@ -73,12 +68,14 @@ usersRouter.post("/", (async (req, res) => {
 // PATCH /api/users/:id — update a user's name
 usersRouter.patch("/:id", (async (req: Request, res) => {
   const id = req.params["id"] as string;
-  const { name } = req.body as { name?: string };
 
-  if (!name || !name.trim()) {
-    res.status(400).json({ error: "Name is required" });
+  const result = updateUserSchema.safeParse(req.body);
+  if (!result.success) {
+    res.status(400).json({ error: result.error.issues[0]?.message ?? "Invalid input" });
     return;
   }
+
+  const { name } = result.data;
 
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) {

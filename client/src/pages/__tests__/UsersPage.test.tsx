@@ -86,7 +86,7 @@ describe("UsersPage", () => {
 		it("opens the dialog when Add Agent is clicked", async () => {
 			renderPage();
 			await waitForUsers();
-			await userEvent.click(screen.getByRole("button", { name: /add agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /new user/i }));
 			expect(screen.getByRole("dialog")).toBeInTheDocument();
 			expect(screen.getByLabelText("Name")).toBeInTheDocument();
 			expect(screen.getByLabelText("Email")).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe("UsersPage", () => {
 		it("shows validation errors when the form is submitted empty", async () => {
 			renderPage();
 			await waitForUsers();
-			await userEvent.click(screen.getByRole("button", { name: /add agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /new user/i }));
 			await userEvent.click(screen.getByRole("button", { name: /create agent/i }));
 			await waitFor(() =>
 				expect(screen.getByText("Name is required")).toBeInTheDocument(),
@@ -107,7 +107,7 @@ describe("UsersPage", () => {
 			mockAxiosInstance.post.mockResolvedValue({});
 			renderPage();
 			await waitForUsers();
-			await userEvent.click(screen.getByRole("button", { name: /add agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /new user/i }));
 			await userEvent.type(screen.getByLabelText("Name"), "New Agent");
 			await userEvent.type(screen.getByLabelText("Email"), "new@example.com");
 			await userEvent.type(screen.getByLabelText("Password"), "secret123");
@@ -128,7 +128,7 @@ describe("UsersPage", () => {
 			});
 			renderPage();
 			await waitForUsers();
-			await userEvent.click(screen.getByRole("button", { name: /add agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /new user/i }));
 			await userEvent.type(screen.getByLabelText("Name"), "Dup");
 			await userEvent.type(screen.getByLabelText("Email"), "alice@example.com");
 			await userEvent.type(screen.getByLabelText("Password"), "secret123");

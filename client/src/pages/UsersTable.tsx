@@ -119,21 +119,37 @@ export function UsersTable({
 	);
 }
 
+function Bone({ className }: { className?: string }) {
+	return <div className={cn("rounded bg-gray-200 animate-pulse", className)} />;
+}
+
 function LoadingSkeleton() {
 	return (
-		<div className="rounded-xl border border-gray-200 overflow-hidden bg-white">
-			<div className="bg-gray-50 border-b border-gray-200 px-4 py-3 h-10" />
-			{[1, 2, 3].map((i) => (
-				<div
-					key={i}
-					className="flex gap-4 px-4 py-3 border-b border-gray-100 last:border-0"
-				>
-					<div className="h-4 bg-gray-200 rounded animate-pulse w-32" />
-					<div className="h-4 bg-gray-200 rounded animate-pulse w-48" />
-					<div className="h-4 bg-gray-200 rounded animate-pulse w-16" />
-					<div className="h-4 bg-gray-200 rounded animate-pulse w-24" />
-				</div>
-			))}
+		<div className="rounded-xl border overflow-hidden">
+			<Table>
+				<TableHeader>
+					<TableRow>
+						<TableHead><Bone className="h-4 w-10" /></TableHead>
+						<TableHead><Bone className="h-4 w-12" /></TableHead>
+						<TableHead><Bone className="h-4 w-8" /></TableHead>
+						<TableHead><Bone className="h-4 w-14" /></TableHead>
+						<TableHead />
+					</TableRow>
+				</TableHeader>
+				<TableBody>
+					{[1, 2, 3, 4, 5].map((i) => (
+						<TableRow key={i}>
+							<TableCell><Bone className="h-4 w-32" /></TableCell>
+							<TableCell><Bone className="h-4 w-48" /></TableCell>
+							<TableCell><Bone className="h-5 w-14 rounded-full" /></TableCell>
+							<TableCell><Bone className="h-4 w-24" /></TableCell>
+							<TableCell className="text-right">
+								<Bone className="h-7 w-7 ml-auto rounded-md" />
+							</TableCell>
+						</TableRow>
+					))}
+				</TableBody>
+			</Table>
 		</div>
 	);
 }

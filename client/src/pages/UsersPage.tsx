@@ -21,7 +21,7 @@ const createAgentSchema = z.object({
 });
 type CreateAgentFormData = z.infer<typeof createAgentSchema>;
 
-const api = axios.create({ withCredentials: true });
+const api = axios.create({ withCredentials: true});
 
 async function fetchUsers(): Promise<User[]> {
 	const { data } = await api.get<{ users: User[] }>("/api/users");

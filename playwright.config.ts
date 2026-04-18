@@ -1,6 +1,7 @@
-import { defineConfig, devices } from "@playwright/test";
 import * as fs from "fs";
 import * as path from "path";
+
+import { defineConfig, devices } from "@playwright/test";
 
 function parseEnvFile(filePath: string): Record<string, string> {
   if (!fs.existsSync(filePath)) return {};

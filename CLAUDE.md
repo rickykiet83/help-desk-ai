@@ -132,6 +132,73 @@ All client-side HTTP requests use **Axios** (`axios`) and all server state is ma
 - Catch axios errors with `axios.isAxiosError(err)` and extract the message from `err.response?.data?.error`. Map specific status codes (e.g. 409) to user-friendly messages before throwing.
 - The `QueryClientProvider` is mounted in `client/src/main.tsx`.
 
+## Component Testing
+
+Vitest + React Testing Library is configured in `client/`. Tests live next to the components they test in a `__tests__/` subfolder.
+
+```
+client/src/
+├── test/
+│   ├── setup.ts          # Imports @testing-library/jest-dom (runs before every test file)
+│   └── render.tsx        # Shared renderWithClient() helper — wraps UI in QueryClientProvider
+└── pages/
+    └── __tests__/
+        ├── UsersTable.test.tsx
+        └── UsersPage.test.tsx
+```
+
+### Running tests
+
+```bash
+# From repo root
+bun run test:unit          # Single run
+# From client/
+bunx vitest                # Watch mode
+bunx vitest run            # Single run
+```
+
+> **Do NOT use `bun test`** — that runs Bun's native runner, not Vitest.
+
+### Writing tests
+
+**Rendering:** use `renderWithClient` for any component that depends on TanStack Query. It creates a fresh `QueryClient` (with `retry: false`) per test.
+
+```tsx
+import { renderWithClient } from "@/test/render";
+renderWithClient(<MyPage />);
+```
+
+Plain `render` from `@testing-library/react` is fine for presentational components with no query hooks.
+
+**Mocking axios:** the axios instance is created at module level with `axios.create()`. Use `vi.hoisted` so the mock is available before the module loads, then `vi.mock` to intercept `create`.
+
+```ts
+const mockAxiosInstance = vi.hoisted(() => ({
+  get: vi.fn(),
+  post: vi.fn(),
+  patch: vi.fn(),
+  delete: vi.fn(),
+}));
+
+vi.mock("axios", () => ({
+  default: {
+    create: () => mockAxiosInstance,
+    isAxiosError: (err: unknown): boolean =>
+      err instanceof Object && "response" in (err as object),
+  },
+}));
+```
+
+Reset mocks between tests with `beforeEach(() => vi.clearAllMocks())`.
+
+**Async data:** use `waitFor` to assert after queries resolve.
+
+```ts
+await waitFor(() => expect(screen.getByText("Bob Agent")).toBeInTheDocument());
+```
+
+**mutateAsync:** always append `.catch(() => {})` on `mutateAsync` calls in `onSubmit` handlers — errors are displayed via `mutation.error`, and swallowing the rejection prevents unhandled-rejection warnings in tests.
+
 ## E2E Testing
 
 Playwright is configured at the repo root. Tests live in `e2e/`.

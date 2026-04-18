@@ -14,7 +14,8 @@
       "WebFetch(domain:www.better-auth.com)",
       "WebFetch(domain:better-auth.com)",
       "Bash(bun test:e2e:*)",
-      "Bash(bunx shadcn@latest:*)"
+      "Bash(bunx shadcn@latest:*)",
+      "Bash(bunx vitest:*)"
     ]
   }
 }

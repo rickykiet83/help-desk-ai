@@ -171,7 +171,7 @@ export function UsersPage() {
 				description="Create a new agent account. They can sign in immediately with the password you set."
 			>
 				<form
-					onSubmit={handleSubmit((data) => createMutation.mutateAsync(data))}
+					onSubmit={handleSubmit((data) => createMutation.mutateAsync(data).catch(() => {}))}
 					className="space-y-4 mt-2"
 				>
 					<div className="space-y-1">
@@ -254,7 +254,7 @@ export function UsersPage() {
 			>
 				<form
 					onSubmit={handleSubmitEdit((data) =>
-						editMutation.mutateAsync({ id: editUser!.id, data })
+						editMutation.mutateAsync({ id: editUser!.id, data }).catch(() => {})
 					)}
 					className="space-y-4 mt-2"
 				>

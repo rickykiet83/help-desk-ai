@@ -1,10 +1,3 @@
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
 import { Loader2, UserPlus } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
@@ -13,6 +6,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { AppDialog, ConfirmDialog } from "@/components/AppDialog";
 import { UsersTable } from "./UsersTable";
 import type { User } from "./UsersTable";
 import axios from "axios";
@@ -127,131 +121,106 @@ export function UsersPage() {
 				onDeleteClick={setConfirmDeleteUser}
 			/>
 
-			<Dialog open={showCreateDialog} onOpenChange={handleDialogOpenChange}>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Add Agent</DialogTitle>
-						<DialogDescription>
-							Create a new agent account. They can sign in immediately with the
-							password you set.
-						</DialogDescription>
-					</DialogHeader>
-
-					<form
-						onSubmit={handleSubmit((data) => createMutation.mutateAsync(data))}
-						className="space-y-4 mt-2"
-					>
-						<div className="space-y-1">
-							<Label htmlFor="name">Name</Label>
-							<Input
-								id="name"
-								{...register("name")}
-								aria-invalid={!!errors.name}
-							/>
-							{errors.name && (
-								<p className="text-xs text-destructive">{errors.name.message}</p>
-							)}
-						</div>
-
-						<div className="space-y-1">
-							<Label htmlFor="email">Email</Label>
-							<Input
-								id="email"
-								type="email"
-								{...register("email")}
-								aria-invalid={!!errors.email}
-							/>
-							{errors.email && (
-								<p className="text-xs text-destructive">
-									{errors.email.message}
-								</p>
-							)}
-						</div>
-
-						<div className="space-y-1">
-							<Label htmlFor="password">Password</Label>
-							<Input
-								id="password"
-								type="password"
-								{...register("password")}
-								aria-invalid={!!errors.password}
-							/>
-							{errors.password && (
-								<p className="text-xs text-destructive">
-									{errors.password.message}
-								</p>
-							)}
-							<p className="text-xs text-muted-foreground">
-								Minimum 6 characters.
-							</p>
-						</div>
-
-						{createMutation.error && (
-							<Alert variant="destructive">
-								<AlertDescription>
-									{createMutation.error.message}
-								</AlertDescription>
-							</Alert>
-						)}
-
-						<div className="flex justify-end gap-2 pt-2">
-							<Button
-								type="button"
-								variant="outline"
-								onClick={() => handleDialogOpenChange(false)}
-								disabled={isSubmitting}
-							>
-								Cancel
-							</Button>
-							<Button type="submit" disabled={isSubmitting}>
-								{isSubmitting && (
-									<Loader2 className="animate-spin mr-2 h-4 w-4" />
-								)}
-								{isSubmitting ? "Creating..." : "Create Agent"}
-							</Button>
-						</div>
-					</form>
-				</DialogContent>
-			</Dialog>
-
-			<Dialog
-				open={confirmDeleteUser !== null}
-				onOpenChange={(open) => {
-					if (!open) setConfirmDeleteUser(null);
-				}}
+			<AppDialog
+				open={showCreateDialog}
+				onOpenChange={handleDialogOpenChange}
+				title="Add Agent"
+				description="Create a new agent account. They can sign in immediately with the password you set."
 			>
-				<DialogContent>
-					<DialogHeader>
-						<DialogTitle>Delete user</DialogTitle>
-						<DialogDescription>
-							Are you sure you want to delete{" "}
-							<span className="font-medium text-foreground">
-								{confirmDeleteUser?.name}
-							</span>
-							? This action cannot be undone.
-						</DialogDescription>
-					</DialogHeader>
+				<form
+					onSubmit={handleSubmit((data) => createMutation.mutateAsync(data))}
+					className="space-y-4 mt-2"
+				>
+					<div className="space-y-1">
+						<Label htmlFor="name">Name</Label>
+						<Input
+							id="name"
+							{...register("name")}
+							aria-invalid={!!errors.name}
+						/>
+						{errors.name && (
+							<p className="text-xs text-destructive">{errors.name.message}</p>
+						)}
+					</div>
+
+					<div className="space-y-1">
+						<Label htmlFor="email">Email</Label>
+						<Input
+							id="email"
+							type="email"
+							{...register("email")}
+							aria-invalid={!!errors.email}
+						/>
+						{errors.email && (
+							<p className="text-xs text-destructive">
+								{errors.email.message}
+							</p>
+						)}
+					</div>
+
+					<div className="space-y-1">
+						<Label htmlFor="password">Password</Label>
+						<Input
+							id="password"
+							type="password"
+							{...register("password")}
+							aria-invalid={!!errors.password}
+						/>
+						{errors.password && (
+							<p className="text-xs text-destructive">
+								{errors.password.message}
+							</p>
+						)}
+						<p className="text-xs text-muted-foreground">
+							Minimum 6 characters.
+						</p>
+					</div>
+
+					{createMutation.error && (
+						<Alert variant="destructive">
+							<AlertDescription>
+								{createMutation.error.message}
+							</AlertDescription>
+						</Alert>
+					)}
+
 					<div className="flex justify-end gap-2 pt-2">
 						<Button
+							type="button"
 							variant="outline"
-							onClick={() => setConfirmDeleteUser(null)}
-							disabled={deleteMutation.isPending}
+							onClick={() => handleDialogOpenChange(false)}
+							disabled={isSubmitting}
 						>
 							Cancel
 						</Button>
-						<Button
-							variant="destructive"
-							onClick={handleDelete}
-							disabled={deleteMutation.isPending}
-						>
-							{deleteMutation.isPending && (
+						<Button type="submit" disabled={isSubmitting}>
+							{isSubmitting && (
 								<Loader2 className="animate-spin mr-2 h-4 w-4" />
 							)}
-							Delete
+							{isSubmitting ? "Creating..." : "Create Agent"}
 						</Button>
 					</div>
-				</DialogContent>
-			</Dialog>
+				</form>
+			</AppDialog>
+
+			<ConfirmDialog
+				open={confirmDeleteUser !== null}
+				onOpenChange={(open) => { if (!open) setConfirmDeleteUser(null); }}
+				title="Delete user"
+				description={
+					<>
+						Are you sure you want to delete{" "}
+						<span className="font-medium text-foreground">
+							{confirmDeleteUser?.name}
+						</span>
+						? This action cannot be undone.
+					</>
+				}
+				confirmLabel="Delete"
+				confirmVariant="destructive"
+				onConfirm={handleDelete}
+				isPending={deleteMutation.isPending}
+			/>
 		</div>
 	);
 }

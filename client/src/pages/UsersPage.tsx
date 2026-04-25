@@ -1,18 +1,22 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AppDialog, ConfirmDialog } from "@/components/AppDialog";
 import type { CreateUserInput, UpdateUserInput } from "@helpdesk/core";
+import { createUserSchema, updateUserSchema } from "@helpdesk/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
-import { CreateUserForm } from "./CreateUserForm";
-import { EditUserForm } from "./EditUserForm";
 import type { User } from "./UsersTable";
+import { UserForm } from "./UserForm";
 import { UserPlus } from "lucide-react";
 import { UsersTable } from "./UsersTable";
 import axios from "axios";
 import { useState } from "react";
 
 const api = axios.create({ withCredentials: true });
+
+type DialogState =
+	| { mode: "create" }
+	| { mode: "edit"; user: User };
 
 async function getUsers(): Promise<User[]> {
 	const { data } = await api.get<{ users: User[] }>("/api/users");
@@ -43,9 +47,8 @@ async function deleteUser(userId: string): Promise<void> {
 
 export function UsersPage() {
 	const queryClient = useQueryClient();
+	const [dialog, setDialog] = useState<DialogState | null>(null);
 	const [confirmDeleteUser, setConfirmDeleteUser] = useState<User | null>(null);
-	const [showCreateDialog, setShowCreateDialog] = useState(false);
-	const [editUser, setEditUser] = useState<User | null>(null);
 
 	const {
 		data: users = [],
@@ -57,7 +60,16 @@ export function UsersPage() {
 		mutationFn: createUser,
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["users"] });
-			setShowCreateDialog(false);
+			setDialog(null);
+		},
+	});
+
+	const editMutation = useMutation({
+		mutationFn: ({ id, data }: { id: string; data: UpdateUserInput }) =>
+			updateUser(id, data),
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["users"] });
+			setDialog(null);
 		},
 	});
 
@@ -68,24 +80,17 @@ export function UsersPage() {
 		},
 	});
 
-	const editMutation = useMutation({
-		mutationFn: ({ id, data }: { id: string; data: UpdateUserInput }) =>
-			updateUser(id, data),
-		onSuccess: () => {
-			queryClient.invalidateQueries({ queryKey: ["users"] });
-			setEditUser(null);
-		},
-	});
-
-	function handleDialogOpenChange(open: boolean) {
-		if (!open) createMutation.reset();
-		setShowCreateDialog(open);
+	function closeDialog() {
+		createMutation.reset();
+		editMutation.reset();
+		setDialog(null);
 	}
 
-	function handleEditOpenChange(open: boolean) {
-		if (!open) {
-			editMutation.reset();
-			setEditUser(null);
+	async function handleFormSubmit(data: CreateUserInput | UpdateUserInput) {
+		if (dialog?.mode === "create") {
+			await createMutation.mutateAsync(data as CreateUserInput);
+		} else if (dialog?.mode === "edit") {
+			await editMutation.mutateAsync({ id: dialog.user.id, data: data as UpdateUserInput });
 		}
 	}
 
@@ -95,11 +100,14 @@ export function UsersPage() {
 		deleteMutation.mutate(confirmDeleteUser.id);
 	}
 
+	const isCreate = dialog?.mode === "create";
+	const activeError = (isCreate ? createMutation : editMutation).error?.message ?? null;
+
 	return (
 		<div className="px-6 py-8 max-w-5xl mx-auto">
 			<div className="flex items-center justify-between mb-6">
 				<h1 className="text-2xl font-bold text-gray-900">Users</h1>
-				<Button onClick={() => setShowCreateDialog(true)}>
+				<Button onClick={() => setDialog({ mode: "create" })}>
 					<UserPlus className="mr-2 h-4 w-4" />
 					New User
 				</Button>
@@ -117,35 +125,35 @@ export function UsersPage() {
 				fetchError={fetchError?.message ?? null}
 				deletingId={deleteMutation.isPending ? (confirmDeleteUser?.id ?? null) : null}
 				onDeleteClick={setConfirmDeleteUser}
-				onEditClick={setEditUser}
+				onEditClick={(user) => setDialog({ mode: "edit", user })}
 			/>
 
 			<AppDialog
-				open={showCreateDialog}
-				onOpenChange={handleDialogOpenChange}
-				title="Add Agent"
-				description="Create a new agent account. They can sign in immediately with the password you set."
+				open={dialog !== null}
+				onOpenChange={(open) => { if (!open) closeDialog(); }}
+				title={isCreate ? "Add User" : "Edit User"}
+				description={
+					isCreate
+						? "Create a new user account. They can sign in immediately with the password you set."
+						: "Update the user's name or password."
+				}
 			>
-				<CreateUserForm
-					onSubmit={createMutation.mutateAsync}
-					onCancel={() => handleDialogOpenChange(false)}
-					error={createMutation.error?.message ?? null}
-				/>
-			</AppDialog>
-
-			<AppDialog
-				open={editUser !== null}
-				onOpenChange={handleEditOpenChange}
-				title="Edit user"
-				description="Update the user's display name."
-			>
-				{editUser && (
-					<EditUserForm
-						key={editUser.id}
-						defaultName={editUser.name}
-						onSubmit={(data) => editMutation.mutateAsync({ id: editUser.id, data })}
-						onCancel={() => handleEditOpenChange(false)}
-						error={editMutation.error?.message ?? null}
+				{dialog && (
+					<UserForm
+						key={dialog.mode === "edit" ? dialog.user.id : "create"}
+						schema={isCreate ? createUserSchema : updateUserSchema}
+						defaultValues={
+							isCreate
+								? { name: "", email: "", password: "" }
+								: { name: dialog.mode === "edit" ? dialog.user.name : "", password: "" }
+						}
+						showEmail={isCreate}
+						passwordHint={isCreate ? undefined : "Leave blank to keep current password"}
+						submitLabel={isCreate ? "Create User" : "Save"}
+						submittingLabel={isCreate ? "Creating..." : "Saving..."}
+						onSubmit={handleFormSubmit}
+						onCancel={closeDialog}
+						error={activeError}
 					/>
 				)}
 			</AppDialog>

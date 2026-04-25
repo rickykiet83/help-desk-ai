@@ -1,12 +1,22 @@
-import type { Request, RequestHandler } from "express";
+import type { Request, RequestHandler, Response } from "express";
 import { createUserSchema, updateUserSchema } from "@helpdesk/core";
 
 import { Role } from "@/generated/prisma/enums";
 import { Router } from "express";
+import type { ZodType } from "zod";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "../db";
 
 export const usersRouter = Router();
+
+function validate<T>(schema: ZodType<T>, data: unknown, res: Response): T | null {
+  const result = schema.safeParse(data);
+  if (!result.success) {
+    res.status(400).json({ error: result.error.issues[0]?.message ?? "Invalid input" });
+    return null;
+  }
+  return result.data;
+}
 
 // GET /api/users — list all users
 usersRouter.get("/", (async (_req, res) => {
@@ -19,13 +29,10 @@ usersRouter.get("/", (async (_req, res) => {
 
 // POST /api/users — create a new agent
 usersRouter.post("/", (async (req, res) => {
-  const result = createUserSchema.safeParse(req.body);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0]?.message ?? "Invalid input" });
-    return;
-  }
+  const data = validate(createUserSchema, req.body, res);
+  if (!data) return;
 
-  const { name, email, password } = result.data;
+  const { name, email, password } = data;
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
@@ -65,17 +72,14 @@ usersRouter.post("/", (async (req, res) => {
   res.status(201).json({ message: "User created" });
 }) as RequestHandler);
 
-// PATCH /api/users/:id — update a user's name
+// PATCH /api/users/:id — update a user's name and optionally their password
 usersRouter.patch("/:id", (async (req: Request, res) => {
   const id = req.params["id"] as string;
 
-  const result = updateUserSchema.safeParse(req.body);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0]?.message ?? "Invalid input" });
-    return;
-  }
+  const data = validate(updateUserSchema, req.body, res);
+  if (!data) return;
 
-  const { name } = result.data;
+  const { name, password } = data;
 
   const target = await prisma.user.findUnique({ where: { id } });
   if (!target) {
@@ -83,11 +87,26 @@ usersRouter.patch("/:id", (async (req: Request, res) => {
     return;
   }
 
-  const updated = await prisma.user.update({
-    where: { id },
-    data: { name: name.trim(), updatedAt: new Date() },
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+  const now = new Date();
+
+  const [updated] = await prisma.$transaction(async (tx) => {
+    const user = await tx.user.update({
+      where: { id },
+      data: { name: name.trim(), updatedAt: now },
+      select: { id: true, name: true, email: true, role: true, createdAt: true },
+    });
+
+    if (password) {
+      const hashedPassword = await hashPassword(password);
+      await tx.account.updateMany({
+        where: { userId: id, providerId: "credential" },
+        data: { password: hashedPassword, updatedAt: now },
+      });
+    }
+
+    return [user];
   });
+
   res.json({ user: updated });
 }) as RequestHandler);
 

@@ -144,7 +144,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const schema = z.object({
-  name: z.string().min(1, "Name is required"),
+  name: z.string().min(3, "Name is required and must be at least 3 characters"),
   email: z.string().email("Invalid email"),
 });
 type FormData = z.infer<typeof schema>;

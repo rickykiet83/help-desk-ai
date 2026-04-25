@@ -99,7 +99,7 @@ describe("UsersPage", () => {
 			await userEvent.click(screen.getByRole("button", { name: /new user/i }));
 			await userEvent.click(screen.getByRole("button", { name: /create agent/i }));
 			await waitFor(() =>
-				expect(screen.getByText("Name is required")).toBeInTheDocument(),
+				expect(screen.getByText('Name is required and must be at least 3 characters')).toBeInTheDocument(),
 			);
 		});
 
@@ -165,6 +165,7 @@ describe("UsersPage", () => {
 			);
 			expect(mockAxiosInstance.patch).toHaveBeenCalledWith("/api/users/2", {
 				name: "Bob Updated",
+				password: "",
 			});
 		});
 
@@ -176,7 +177,7 @@ describe("UsersPage", () => {
 			await userEvent.clear(nameInput);
 			await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
 			await waitFor(() =>
-				expect(screen.getByText("Name is required")).toBeInTheDocument(),
+				expect(screen.getByText('Name is required and must be at least 3 characters')).toBeInTheDocument(),
 			);
 		});
 	});

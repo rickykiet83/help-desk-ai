@@ -1,5 +1,5 @@
+import { act, render, screen, waitFor } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
 
 import { CreateUserForm } from "../CreateUserForm";
 import userEvent from "@testing-library/user-event";
@@ -57,7 +57,7 @@ describe("CreateUserForm", () => {
 				screen.getByRole("button", { name: /create agent/i }),
 			);
 			await waitFor(() =>
-				expect(screen.getByText("Name is required")).toBeInTheDocument(),
+				expect(screen.getByText('Name is required and must be at least 3 characters')).toBeInTheDocument(),
 			);
 			expect(onSubmit).not.toHaveBeenCalled();
 		});
@@ -144,7 +144,7 @@ describe("CreateUserForm", () => {
 			expect(
 				screen.getByRole("button", { name: /cancel/i }),
 			).toBeDisabled();
-			resolve();
+			await act(async () => { resolve(); });
 		});
 	});
 });

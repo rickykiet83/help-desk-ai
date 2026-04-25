@@ -1,4 +1,4 @@
-import { Role } from '../generated/prisma/enums';
+import { Role } from "@helpdesk/core";
 import { admin } from "better-auth/plugins";
 import { betterAuth } from "better-auth";
 import { prisma } from "../db";
@@ -27,7 +27,7 @@ export const auth = betterAuth({
   },
   plugins: [
     admin({
-      adminRoles: ["admin"],
+      adminRoles: [Role.admin],
       defaultRole: Role.agent,
     }),
   ],

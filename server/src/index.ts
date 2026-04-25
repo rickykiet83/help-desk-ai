@@ -5,13 +5,13 @@ import { auth } from "./lib/auth";
 import cors from "cors";
 import express from "express";
 import { healthRouter } from "./routes/health";
-import { usersRouter } from "./routes/users";
 import helmet from "helmet";
 import { prisma } from "./db";
 import rateLimit from "express-rate-limit";
-import { requireAuth } from './middleware/require-auth';
 import { requireAdmin } from './middleware/require-admin';
+import { requireAuth } from './middleware/require-auth';
 import { toNodeHandler } from "better-auth/node";
+import { usersRouter } from "./routes/users";
 
 if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
   console.error("FATAL: BETTER_AUTH_SECRET is missing or too short. Refusing to start.");

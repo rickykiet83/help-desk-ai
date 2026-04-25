@@ -96,7 +96,13 @@ bun test:e2e               # Run Playwright tests (resets test DB, seeds, starts
 - `admin` — seeded at deploy time; can create/manage agents
 - `agent` — created by admin; can view and manage tickets
 
-Always use the generated `Role` enum from `@/generated/prisma/enums` instead of hardcoding role strings (e.g. `Role.agent`, not `"agent"`).
+Always import and use `Role` from `@helpdesk/core` — never use bare `"admin"` or `"agent"` strings. This applies to both client and server. The Prisma-generated Role enum (`@/generated/prisma/enums`) is not the canonical source; `@helpdesk/core` is.
+
+```ts
+import { Role } from "@helpdesk/core";
+// ✓ Role.admin, Role.agent
+// ✗ "admin", "agent"
+```
 
 ## Authentication
 

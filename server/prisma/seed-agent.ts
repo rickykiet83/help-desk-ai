@@ -6,6 +6,7 @@
  * DATABASE_URL injected by global-setup.
  */
 import "dotenv/config";
+import { Role } from "@helpdesk/core";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "../src/db";
 
@@ -27,7 +28,7 @@ async function seedAgent() {
       email,
       name: "Test Agent",
       emailVerified: true,
-      role: "agent",
+      role: Role.agent,
       createdAt: new Date(),
       updatedAt: new Date(),
       accounts: {

@@ -1,5 +1,5 @@
 import { Navigate, Outlet } from "react-router-dom";
-
+import { Role } from "@helpdesk/core";
 import { useSession } from "../lib/auth-client";
 
 export function AdminRoute() {
@@ -14,7 +14,7 @@ export function AdminRoute() {
   }
 
   if (!session) return <Navigate to="/login" replace />;
-  if (session?.user?.role !== "admin") return <Navigate to="/" replace />;
+  if (session?.user?.role !== Role.admin) return <Navigate to="/" replace />;
 
   return <Outlet />;
 }

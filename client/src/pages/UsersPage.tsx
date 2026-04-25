@@ -19,7 +19,7 @@ type DialogState =
 	| { mode: "edit"; user: User };
 
 async function getUsers(): Promise<User[]> {
-	const { data } = await api.get<{ users: User[] }>("/api/users");
+	const { data } = await api.get<{ users: User[] }>("/api/users?includeDeleted=true");
 	return data.users;
 }
 
@@ -43,6 +43,10 @@ async function updateUser(userId: string, data: UpdateUserInput): Promise<void> 
 
 async function deleteUser(userId: string): Promise<void> {
 	await api.delete(`/api/users/${userId}`);
+}
+
+async function restoreUser(userId: string): Promise<void> {
+	await api.post(`/api/users/${userId}/restore`);
 }
 
 export function UsersPage() {
@@ -75,6 +79,13 @@ export function UsersPage() {
 
 	const deleteMutation = useMutation({
 		mutationFn: deleteUser,
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ["users"] });
+		},
+	});
+
+	const restoreMutation = useMutation({
+		mutationFn: restoreUser,
 		onSuccess: () => {
 			queryClient.invalidateQueries({ queryKey: ["users"] });
 		},
@@ -119,13 +130,21 @@ export function UsersPage() {
 				</Alert>
 			)}
 
+			{restoreMutation.error && (
+				<Alert variant="destructive" className="mb-4">
+					<AlertDescription>{restoreMutation.error.message}</AlertDescription>
+				</Alert>
+			)}
+
 			<UsersTable
 				users={users}
 				isLoading={isLoading}
 				fetchError={fetchError?.message ?? null}
 				deletingId={deleteMutation.isPending ? (confirmDeleteUser?.id ?? null) : null}
+				restoringId={restoreMutation.isPending ? (restoreMutation.variables ?? null) : null}
 				onDeleteClick={setConfirmDeleteUser}
 				onEditClick={(user) => setDialog({ mode: "edit", user })}
+				onRestoreClick={(user) => restoreMutation.mutate(user.id)}
 			/>
 
 			<AppDialog
@@ -170,7 +189,7 @@ export function UsersPage() {
 						<span className="font-medium text-foreground">
 							{confirmDeleteUser?.name}
 						</span>
-						? This action cannot be undone.
+						? They will be marked as deleted and can be restored later.
 					</>
 				}
 				confirmLabel="Delete"

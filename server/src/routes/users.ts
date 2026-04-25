@@ -1,7 +1,7 @@
 import type { Request, RequestHandler, Response } from "express";
 import { createUserSchema, updateUserSchema } from "@helpdesk/core";
 
-import { Role } from "@/generated/prisma/enums";
+import { Role } from "@helpdesk/core";
 import { Router } from "express";
 import type { ZodType } from "zod";
 import { hashPassword } from "better-auth/crypto";
@@ -18,10 +18,12 @@ function validate<T>(schema: ZodType<T>, data: unknown, res: Response): T | null
   return result.data;
 }
 
-// GET /api/users — list all users
-usersRouter.get("/", (async (_req, res) => {
+// GET /api/users — list all users (excludes soft-deleted by default; ?includeDeleted=true to include)
+usersRouter.get("/", (async (req, res) => {
+  const includeDeleted = req.query["includeDeleted"] === "true";
   const users = await prisma.user.findMany({
-    select: { id: true, name: true, email: true, role: true, createdAt: true },
+    where: includeDeleted ? undefined : { deletedAt: null },
+    select: { id: true, name: true, email: true, role: true, createdAt: true, deletedAt: true },
     orderBy: { createdAt: "desc" },
   });
   res.json({ users });
@@ -110,7 +112,7 @@ usersRouter.patch("/:id", (async (req: Request, res) => {
   res.json({ user: updated });
 }) as RequestHandler);
 
-// DELETE /api/users/:id — delete a non-admin user
+// DELETE /api/users/:id — soft-delete a non-admin user
 usersRouter.delete("/:id", (async (req: Request, res) => {
   const id = req.params["id"] as string;
 
@@ -119,11 +121,33 @@ usersRouter.delete("/:id", (async (req: Request, res) => {
     res.status(404).json({ error: "User not found" });
     return;
   }
-  if (target.role === "admin") {
+  if (target.role === Role.admin) {
     res.status(403).json({ error: "Cannot delete an admin user" });
     return;
   }
+  if (target.deletedAt) {
+    res.status(409).json({ error: "User is already deleted" });
+    return;
+  }
 
-  await prisma.user.delete({ where: { id } });
+  await prisma.user.update({ where: { id }, data: { deletedAt: new Date() } });
+  res.status(204).send();
+}) as RequestHandler);
+
+// POST /api/users/:id/restore — restore a soft-deleted user
+usersRouter.post("/:id/restore", (async (req: Request, res) => {
+  const id = req.params["id"] as string;
+
+  const target = await prisma.user.findUnique({ where: { id } });
+  if (!target) {
+    res.status(404).json({ error: "User not found" });
+    return;
+  }
+  if (!target.deletedAt) {
+    res.status(409).json({ error: "User is not deleted" });
+    return;
+  }
+
+  await prisma.user.update({ where: { id }, data: { deletedAt: null } });
   res.status(204).send();
 }) as RequestHandler);

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { screen, waitFor } from "@testing-library/react";
 
+import { Role } from "@helpdesk/core";
 import type { User } from "../UsersTable";
 import { UsersPage } from "../UsersPage";
 import { renderWithClient } from "@/test/render";
@@ -34,17 +35,28 @@ const mockUsers: User[] = [
 		id: "1",
 		name: "Alice Admin",
 		email: "alice@example.com",
-		role: "admin",
+		role: Role.admin,
 		createdAt: "2024-01-15T00:00:00.000Z",
+		deletedAt: null,
 	},
 	{
 		id: "2",
 		name: "Bob Agent",
 		email: "bob@example.com",
-		role: "agent",
+		role: Role.agent,
 		createdAt: "2024-03-20T00:00:00.000Z",
+		deletedAt: null,
 	},
 ];
+
+const deletedUser: User = {
+	id: "3",
+	name: "Carol Deleted",
+	email: "carol@example.com",
+	role: "agent",
+	createdAt: "2024-05-01T00:00:00.000Z",
+	deletedAt: "2024-06-01T00:00:00.000Z",
+};
 
 function renderPage() {
 	return renderWithClient(<UsersPage />);
@@ -97,7 +109,7 @@ describe("UsersPage", () => {
 			renderPage();
 			await waitForUsers();
 			await userEvent.click(screen.getByRole("button", { name: /new user/i }));
-			await userEvent.click(screen.getByRole("button", { name: /create agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /create user/i }));
 			await waitFor(() =>
 				expect(screen.getByText('Name is required and must be at least 3 characters')).toBeInTheDocument(),
 			);
@@ -111,7 +123,7 @@ describe("UsersPage", () => {
 			await userEvent.type(screen.getByLabelText("Name"), "New Agent");
 			await userEvent.type(screen.getByLabelText("Email"), "new@example.com");
 			await userEvent.type(screen.getByLabelText("Password"), "secret123");
-			await userEvent.click(screen.getByRole("button", { name: /create agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /create user/i }));
 			await waitFor(() =>
 				expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
 			);
@@ -132,7 +144,7 @@ describe("UsersPage", () => {
 			await userEvent.type(screen.getByLabelText("Name"), "Dup");
 			await userEvent.type(screen.getByLabelText("Email"), "alice@example.com");
 			await userEvent.type(screen.getByLabelText("Password"), "secret123");
-			await userEvent.click(screen.getByRole("button", { name: /create agent/i }));
+			await userEvent.click(screen.getByRole("button", { name: /create user/i }));
 			await waitFor(() =>
 				expect(
 					screen.getByText("Email already exists, please choose a new one."),
@@ -192,6 +204,13 @@ describe("UsersPage", () => {
 			expect(screen.getAllByText("Bob Agent").length).toBeGreaterThan(0);
 		});
 
+		it("confirmation dialog says the user can be restored later", async () => {
+			renderPage();
+			await waitForUsers();
+			await userEvent.click(screen.getByTitle("Delete user"));
+			expect(screen.getByText(/can be restored later/i)).toBeInTheDocument();
+		});
+
 		it("calls DELETE and closes the dialog after confirming", async () => {
 			mockAxiosInstance.delete.mockResolvedValue({});
 			renderPage();
@@ -213,6 +232,57 @@ describe("UsersPage", () => {
 				expect(screen.queryByRole("dialog")).not.toBeInTheDocument(),
 			);
 			expect(mockAxiosInstance.delete).not.toHaveBeenCalled();
+		});
+	});
+
+	describe("Restore user flow", () => {
+		it("fetches users with ?includeDeleted=true", async () => {
+			renderPage();
+			await waitForUsers();
+			expect(mockAxiosInstance.get).toHaveBeenCalledWith("/api/users?includeDeleted=true");
+		});
+
+		it("shows a restore button for a deleted user in the list", async () => {
+			mockAxiosInstance.get.mockResolvedValue({
+				data: { users: [...mockUsers, deletedUser] },
+			});
+			renderPage();
+			await waitFor(() =>
+				expect(screen.getByText("Carol Deleted")).toBeInTheDocument(),
+			);
+			expect(screen.getByTitle("Restore user")).toBeInTheDocument();
+		});
+
+		it("calls POST /api/users/:id/restore when the restore button is clicked", async () => {
+			mockAxiosInstance.post.mockResolvedValue({});
+			mockAxiosInstance.get.mockResolvedValue({
+				data: { users: [...mockUsers, deletedUser] },
+			});
+			renderPage();
+			await waitFor(() =>
+				expect(screen.getByTitle("Restore user")).toBeInTheDocument(),
+			);
+			await userEvent.click(screen.getByTitle("Restore user"));
+			await waitFor(() =>
+				expect(mockAxiosInstance.post).toHaveBeenCalledWith("/api/users/3/restore"),
+			);
+		});
+
+		it("shows a restore error alert when the restore POST fails", async () => {
+			mockAxiosInstance.post.mockRejectedValue(
+				new Error("Failed to restore user."),
+			);
+			mockAxiosInstance.get.mockResolvedValue({
+				data: { users: [...mockUsers, deletedUser] },
+			});
+			renderPage();
+			await waitFor(() =>
+				expect(screen.getByTitle("Restore user")).toBeInTheDocument(),
+			);
+			await userEvent.click(screen.getByTitle("Restore user"));
+			await waitFor(() =>
+				expect(screen.getByText("Failed to restore user.")).toBeInTheDocument(),
+			);
 		});
 	});
 });

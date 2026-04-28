@@ -14,6 +14,12 @@ type: project
 
 **Test files:**
 - `e2e/tests/auth.spec.ts` — 16 auth tests covering login happy path, validation, server errors, protected routes, RBAC, and logout
+- `e2e/tests/soft-delete.spec.ts` — 7 tests covering delete flow, restore flow, persistence, and admin protection (serial mode)
 - `e2e/pages/LoginPage.ts` — POM for the login page
+- `e2e/pages/UsersPage.ts` — POM for /users: rowFor(), statusBadgeFor(), deleteUser(), restoreUser(), edit/delete/restore button locators
 
 **Why:** Self-registration is disabled in Better Auth (`disableSignUp: true`), so agent users cannot be created via the UI — must be seeded directly via Prisma.
+
+**Serial mode for shared-user tests:** Any test suite that mutates a single seeded user's state (e.g., soft-delete) MUST use `test.describe.configure({ mode: "serial" })`. With `fullyParallel: true` (7 workers default), parallel tests race on the same DB row and produce flaky results. Serial mode coalesces the suite to 1 worker without affecting other files.
+
+**afterEach restore pattern:** After a test that may soft-delete the agent, restore in `afterEach` by navigating to `/users` directly (not via `loginAsAdmin` — the session is still active and `loginAsAdmin` would bounce back to `/` if already authenticated, causing `LoginPage.goto()` to time out waiting for "Sign in" button).

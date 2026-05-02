@@ -1,5 +1,5 @@
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AppDialog, ConfirmDialog } from "@/components/AppDialog";
+import { ConfirmDialog, ModalDialog } from '@/components/AppDialog';
 import type { CreateUserInput, UpdateUserInput } from "@helpdesk/core";
 import { createUserSchema, updateUserSchema } from "@helpdesk/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -115,23 +115,23 @@ export function UsersPage() {
 	const activeError = (isCreate ? createMutation : editMutation).error?.message ?? null;
 
 	return (
-		<div className="px-6 py-8 max-w-5xl mx-auto">
-			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold text-gray-900">Users</h1>
-				<Button onClick={() => setDialog({ mode: "create" })}>
-					<UserPlus className="mr-2 h-4 w-4" />
+		<div className='px-6 py-8 max-w-5xl mx-auto'>
+			<div className='flex items-center justify-between mb-6'>
+				<h1 className='text-2xl font-bold text-gray-900'>Users</h1>
+				<Button onClick={() => setDialog({ mode: 'create' })}>
+					<UserPlus className='mr-2 h-4 w-4' />
 					New User
 				</Button>
 			</div>
 
 			{deleteMutation.error && (
-				<Alert variant="destructive" className="mb-4">
+				<Alert variant='destructive' className='mb-4'>
 					<AlertDescription>{deleteMutation.error.message}</AlertDescription>
 				</Alert>
 			)}
 
 			{restoreMutation.error && (
-				<Alert variant="destructive" className="mb-4">
+				<Alert variant='destructive' className='mb-4'>
 					<AlertDescription>{restoreMutation.error.message}</AlertDescription>
 				</Alert>
 			)}
@@ -143,57 +143,57 @@ export function UsersPage() {
 				deletingId={deleteMutation.isPending ? (confirmDeleteUser?.id ?? null) : null}
 				restoringId={restoreMutation.isPending ? (restoreMutation.variables ?? null) : null}
 				onDeleteClick={setConfirmDeleteUser}
-				onEditClick={(user) => setDialog({ mode: "edit", user })}
+				onEditClick={(user) => setDialog({ mode: 'edit', user })}
 				onRestoreClick={(user) => restoreMutation.mutate(user.id)}
 			/>
 
-			<AppDialog
+			<ModalDialog
 				open={dialog !== null}
-				onOpenChange={(open) => { if (!open) closeDialog(); }}
-				title={isCreate ? "Add User" : "Edit User"}
+				onOpenChange={(open) => {
+					if (!open) closeDialog();
+				}}
+				title={isCreate ? 'Add User' : 'Edit User'}
 				description={
 					isCreate
-						? "Create a new user account. They can sign in immediately with the password you set."
+						? 'Create a new user account. They can sign in immediately with the password you set.'
 						: "Update the user's name or password."
 				}
 			>
 				{dialog && (
 					<UserForm
-						key={dialog.mode === "edit" ? dialog.user.id : "create"}
+						key={dialog.mode === 'edit' ? dialog.user.id : 'create'}
 						schema={isCreate ? createUserSchema : updateUserSchema}
 						defaultValues={
 							isCreate
-								? { name: "", email: "", password: "" }
-								: { name: dialog.mode === "edit" ? dialog.user.name : "", password: "" }
+								? { name: '', email: '', password: '' }
+								: { name: dialog.mode === 'edit' ? dialog.user.name : '', password: '' }
 						}
 						showEmail={isCreate}
-						passwordHint={isCreate ? undefined : "Leave blank to keep current password"}
-						submitLabel={isCreate ? "Create User" : "Save"}
-						submittingLabel={isCreate ? "Creating..." : "Saving..."}
+						passwordHint={isCreate ? undefined : 'Leave blank to keep current password'}
+						submitLabel={isCreate ? 'Create User' : 'Save'}
+						submittingLabel={isCreate ? 'Creating...' : 'Saving...'}
 						onSubmit={handleFormSubmit}
 						onCancel={closeDialog}
 						error={activeError}
 					/>
 				)}
-			</AppDialog>
+			</ModalDialog>
 
 			<ConfirmDialog
 				open={confirmDeleteUser !== null}
 				onOpenChange={(open) => {
 					if (!open) setConfirmDeleteUser(null);
 				}}
-				title="Delete user"
+				title='Delete user'
 				description={
 					<>
-						Are you sure you want to delete{" "}
-						<span className="font-medium text-foreground">
-							{confirmDeleteUser?.name}
-						</span>
-						? They will be marked as deleted and can be restored later.
+						Are you sure you want to delete{' '}
+						<span className='font-medium text-foreground'>{confirmDeleteUser?.name}</span>? They will be marked as
+						deleted and can be restored later.
 					</>
 				}
-				confirmLabel="Delete"
-				confirmVariant="destructive"
+				confirmLabel='Delete'
+				confirmVariant='destructive'
 				onConfirm={handleDelete}
 				isPending={deleteMutation.isPending}
 			/>

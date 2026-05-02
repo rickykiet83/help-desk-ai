@@ -1,15 +1,10 @@
-import type { ReactNode } from "react";
-import { Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { buttonVariants } from "@/components/ui/button";
-import {
-	Dialog,
-	DialogContent,
-	DialogDescription,
-	DialogHeader,
-	DialogTitle,
-} from "@/components/ui/dialog";
-import type { VariantProps } from "class-variance-authority";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+
+import { Button } from '@/components/ui/button';
+import { Loader2 } from 'lucide-react';
+import type { ReactNode } from 'react';
+import type { VariantProps } from 'class-variance-authority';
+import { buttonVariants } from '@/components/ui/button';
 
 interface AppDialogProps {
 	open: boolean;
@@ -19,13 +14,7 @@ interface AppDialogProps {
 	children: ReactNode;
 }
 
-export function AppDialog({
-	open,
-	onOpenChange,
-	title,
-	description,
-	children,
-}: AppDialogProps) {
+export function ModalDialog({ open, onOpenChange, title, description, children }: AppDialogProps) {
 	return (
 		<Dialog open={open} onOpenChange={onOpenChange}>
 			<DialogContent>
@@ -45,7 +34,7 @@ interface ConfirmDialogProps {
 	title: string;
 	description: ReactNode;
 	confirmLabel?: string;
-	confirmVariant?: VariantProps<typeof buttonVariants>["variant"];
+	confirmVariant?: VariantProps<typeof buttonVariants>['variant'];
 	onConfirm: () => void;
 	isPending?: boolean;
 }
@@ -55,35 +44,22 @@ export function ConfirmDialog({
 	onOpenChange,
 	title,
 	description,
-	confirmLabel = "Confirm",
-	confirmVariant = "default",
+	confirmLabel = 'Confirm',
+	confirmVariant = 'default',
 	onConfirm,
 	isPending = false,
 }: ConfirmDialogProps) {
 	return (
-		<AppDialog
-			open={open}
-			onOpenChange={onOpenChange}
-			title={title}
-			description={description}
-		>
-			<div className="flex justify-end gap-2 pt-2">
-				<Button
-					variant="outline"
-					onClick={() => onOpenChange(false)}
-					disabled={isPending}
-				>
+		<ModalDialog open={open} onOpenChange={onOpenChange} title={title} description={description}>
+			<div className='flex justify-end gap-2 pt-2'>
+				<Button variant='outline' onClick={() => onOpenChange(false)} disabled={isPending}>
 					Cancel
 				</Button>
-				<Button
-					variant={confirmVariant}
-					onClick={onConfirm}
-					disabled={isPending}
-				>
-					{isPending && <Loader2 className="animate-spin mr-2 h-4 w-4" />}
+				<Button variant={confirmVariant} onClick={onConfirm} disabled={isPending}>
+					{isPending && <Loader2 className='animate-spin mr-2 h-4 w-4' />}
 					{confirmLabel}
 				</Button>
 			</div>
-		</AppDialog>
+		</ModalDialog>
 	);
 }

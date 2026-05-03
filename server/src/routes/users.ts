@@ -1,22 +1,13 @@
-import type { Request, RequestHandler, Response } from "express";
+import type { Request, RequestHandler } from "express";
 import { createUserSchema, updateUserSchema } from "@helpdesk/core";
 
 import { Role } from "@helpdesk/core";
 import { Router } from "express";
-import type { ZodType } from "zod";
 import { hashPassword } from "better-auth/crypto";
 import { prisma } from "../db";
+import { validate } from "../lib/validate";
 
 export const usersRouter = Router();
-
-function validate<T>(schema: ZodType<T>, data: unknown, res: Response): T | null {
-  const result = schema.safeParse(data);
-  if (!result.success) {
-    res.status(400).json({ error: result.error.issues[0]?.message ?? "Invalid input" });
-    return null;
-  }
-  return result.data;
-}
 
 // GET /api/users — list all users (excludes soft-deleted by default; ?includeDeleted=true to include)
 usersRouter.get("/", (async (req, res) => {

@@ -52,7 +52,8 @@ helpdesk/
         ├── index.ts              # App entry — cors, auth handler, routes
         ├── db.ts                 # Prisma client singleton
         ├── lib/
-        │   └── auth.ts           # Better Auth config (Prisma adapter, emailAndPassword, role field)
+        │   ├── auth.ts           # Better Auth config (Prisma adapter, emailAndPassword, role field)
+        │   └── validate.ts       # validate<T>(schema, data, res) — parses with Zod, sends 400 on failure
         ├── middleware/
         │   └── require-auth.ts   # Calls auth.api.getSession(); attaches req.user / req.session
         ├── routes/
@@ -140,7 +141,14 @@ Use **Zod** for all runtime data validation — on both client and server.
 
 - Define schemas with `z.object(...)` and infer TypeScript types with `z.infer<typeof schema>`.
 - **Shared schemas belong in `core/src/schemas/`** (package `@helpdesk/core`) and are imported by both client and server. Never duplicate a schema — if it's used in more than one package, it lives in `core`.
-- On the server, validate request bodies in route handlers before passing data to the database.
+- On the server, validate request bodies using the `validate` helper from `server/src/lib/validate.ts`. It parses with Zod, sends a `400` with the first error message on failure, and returns `null` — call it and guard with `if (!data) return`.
+
+```ts
+import { validate } from "../lib/validate";
+
+const data = validate(mySchema, req.body, res);
+if (!data) return;
+```
 
 All client-side forms use **React Hook Form** (`react-hook-form`) with the Zod resolver (`@hookform/resolvers/zod`). Never use uncontrolled `useState` for form fields.
 

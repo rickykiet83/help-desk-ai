@@ -1,15 +1,19 @@
-import type { NextFunction, Request, Response } from "express";
+import type { RequestHandler } from "express";
 
-export function requireWebhookSecret(req: Request, res: Response, next: NextFunction) {
+export const requireWebhookSecret: RequestHandler = (req, res, next) => {
   const secret = process.env.WEBHOOK_SECRET;
   if (!secret) {
-    res.status(500).json({ error: "WEBHOOK_SECRET is not configured" });
+    res.status(500).json({ error: "Webhook secret is not configured" });
     return;
   }
-  const { signature } = req.body as Record<string, string>;
-  if (signature !== secret) {
-    res.status(401).json({ error: "Invalid webhook signature" });
+
+  const provided =
+    req.headers["x-webhook-secret"] || req.query.secret;
+
+  if (provided !== secret) {
+    res.status(401).json({ error: "Invalid webhook secret" });
     return;
   }
+
   next();
-}
+};

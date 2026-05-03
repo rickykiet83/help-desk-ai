@@ -7,11 +7,11 @@ import multer from "multer";
 import { prisma } from "../db";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
 
-export const webhooksRouter = Router();
+export const router = Router();
 
 const upload = multer();
 
-webhooksRouter.post(
+router.post(
   "/mailgun",
   upload.none() as RequestHandler,
   requireWebhookSecret as RequestHandler,

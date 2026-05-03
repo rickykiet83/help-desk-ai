@@ -16,7 +16,10 @@
       "Bash(bun test:e2e:*)",
       "Bash(bunx shadcn@latest:*)",
       "Bash(bunx vitest:*)",
-      "WebFetch(domain:medium.com)"
+      "WebFetch(domain:medium.com)",
+      "Bash(openssl rand:*)",
+      "Bash(node -e ':*)",
+      "Bash(curl -s -X POST http://localhost:3001/api/webhooks/mailgun -F 'from=Jane Smith <jane@example.com>' -F 'subject=I need a refund for order #1234' -F 'stripped-text=Hi, I purchased order #1234 last week and would like a refund please.' -F timestamp=__TRACKED_VAR__ -F token=__TRACKED_VAR__ -F signature=__TRACKED_VAR__)"
     ]
   }
 }

@@ -70,17 +70,19 @@ model Verification {
 }
 
 model Ticket {
-  id           String         @id @default(cuid())
+  id           Int             @id @default(autoincrement())
   subject      String
   body         String
-  status       TicketStatus   @default(Open)
-  category     TicketCategory
+  status       TicketStatus    @default(Open)
+  category     TicketCategory?
   aiSummary    String?
   aiReply      String?
   assignedToId String?
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  assignedTo   User?          @relation(fields: [assignedToId], references: [id])
+  senderName   String?
+  senderEmail  String?
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  assignedTo   User?           @relation(fields: [assignedToId], references: [id])
 }
 
 enum Role {

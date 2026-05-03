@@ -278,4 +278,5 @@ BETTER_AUTH_SECRET=""
 SEED_ADMIN_EMAIL="admin@example.com"
 SEED_ADMIN_PASSWORD="password123"
 TRUSTED_ORIGINS="http://localhost:5173"
+WEBHOOK_SECRET=<from Mailgun dashboard under Routes>
 ```

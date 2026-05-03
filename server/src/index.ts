@@ -12,10 +12,15 @@ import { requireAdmin } from './middleware/require-admin';
 import { requireAuth } from './middleware/require-auth';
 import { toNodeHandler } from "better-auth/node";
 import { usersRouter } from "./routes/users";
+import { webhooksRouter } from "./routes/webhooks";
 
 if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
   console.error("FATAL: BETTER_AUTH_SECRET is missing or too short. Refusing to start.");
   process.exit(1);
+}
+
+if (!process.env.WEBHOOK_SECRET) {
+  console.warn("Warning: WEBHOOK_SECRET is not set.");
 }
 
 
@@ -48,6 +53,7 @@ app.all("/api/auth/{*any}", (req, res, next) => toNodeHandler(auth)(req, res).ca
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
+app.use("/api/webhooks", webhooksRouter);
 app.use("/api/users", requireAuth as express.RequestHandler, requireAdmin as express.RequestHandler, usersRouter);
 
 app.get("/api/me", requireAuth, ((req: AuthenticatedRequest, res) => {

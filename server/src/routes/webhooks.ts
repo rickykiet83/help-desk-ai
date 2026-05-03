@@ -12,7 +12,7 @@ export const router = Router();
 const upload = multer();
 
 router.post(
-  "/mailgun",
+  "/inbound-email",
   upload.none() as RequestHandler,
   requireWebhookSecret as RequestHandler,
   (async (req, res) => {

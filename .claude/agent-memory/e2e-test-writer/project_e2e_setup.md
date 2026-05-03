@@ -15,8 +15,11 @@ type: project
 **Test files:**
 - `e2e/tests/auth.spec.ts` — 16 auth tests covering login happy path, validation, server errors, protected routes, RBAC, and logout
 - `e2e/tests/soft-delete.spec.ts` — 7 tests covering delete flow, restore flow, persistence, and admin protection (serial mode)
+- `e2e/tests/webhooks/inbound-email.spec.ts` — 12 API-only tests for POST /api/webhooks/inbound-email: secret validation (missing/wrong via header and query), payload validation (missing fields, invalid email), happy path (header secret, query-param secret, optional bodyHtml field)
 - `e2e/pages/LoginPage.ts` — POM for the login page
 - `e2e/pages/UsersPage.ts` — POM for /users: rowFor(), statusBadgeFor(), deleteUser(), restoreUser(), edit/delete/restore button locators
+
+**Webhook secret in tests:** `requireWebhookSecret` middleware reads from `x-webhook-secret` header or `?secret=` query param — NOT `req.body.signature`. `WEBHOOK_SECRET` is set to `"test-webhook-secret"` in `server/.env.test`. Since `testEnv` is only passed to the webServer process (not the test runner), webhook tests hardcode this known value as a constant in the spec file.
 
 **Why:** Self-registration is disabled in Better Auth (`disableSignUp: true`), so agent users cannot be created via the UI — must be seeded directly via Prisma.
 

@@ -24,7 +24,8 @@ helpdesk/
 ├── core/                         # Shared package (@helpdesk/core) — Zod schemas and inferred types
 │   └── src/
 │       ├── index.ts
-│       └── schemas/              # One file per domain (e.g. users.ts)
+│       ├── constants/            # as-const enum objects (Role, TicketStatus, TicketCategory)
+│       └── schemas/              # One file per domain (e.g. users.ts, tickets.ts)
 ├── client/                       # React + Vite frontend (port 5173)
 │   ├── src/
 │   │   ├── App.tsx               # Route definitions
@@ -97,12 +98,14 @@ bun test:e2e               # Run Playwright tests (resets test DB, seeds, starts
 - `admin` — seeded at deploy time; can create/manage agents
 - `agent` — created by admin; can view and manage tickets
 
-Always import and use `Role` from `@helpdesk/core` — never use bare `"admin"` or `"agent"` strings. This applies to both client and server. The Prisma-generated Role enum (`@/generated/prisma/enums`) is not the canonical source; `@helpdesk/core` is.
+Always import and use `Role`, `TicketStatus`, and `TicketCategory` from `@helpdesk/core` — never use bare string literals. This applies to both client and server. The Prisma-generated enums (`@/generated/prisma/enums`) are not the canonical source; `@helpdesk/core` is.
 
 ```ts
-import { Role } from "@helpdesk/core";
+import { Role, TicketStatus, TicketCategory } from "@helpdesk/core";
 // ✓ Role.admin, Role.agent
-// ✗ "admin", "agent"
+// ✓ TicketStatus.Open, TicketStatus.Resolved, TicketStatus.Closed
+// ✓ TicketCategory.General_Question, TicketCategory.Technical_Question, TicketCategory.Refund_Request
+// ✗ "admin", "Open", "General_Question", etc.
 ```
 
 ## Authentication
@@ -177,6 +180,17 @@ All client-side HTTP requests use **Axios** (`axios`) and all server state is ma
 - After a successful mutation, call `queryClient.invalidateQueries` to keep the cache in sync.
 - Catch axios errors with `axios.isAxiosError(err)` and extract the message from `err.response?.data?.error`. Map specific status codes (e.g. 409) to user-friendly messages before throwing.
 - The `QueryClientProvider` is mounted in `client/src/main.tsx`.
+
+## Testing Strategy
+
+**Default to component tests.** Write Vitest + RTL component tests for all UI logic — rendering, loading/error/empty states, user interactions, API calls. E2E tests are slow and expensive; use them only for flows that cannot be covered at the component level:
+
+- Auth (login redirects, session persistence across page loads)
+- Multi-step flows that cross multiple pages
+- Real database + server integration (e.g. webhook ingestion end-to-end)
+- Browser-specific behaviour that jsdom cannot simulate
+
+Everything else — form validation, API mocking, conditional rendering, mutations — belongs in component tests.
 
 ## Component Testing
 
@@ -269,6 +283,8 @@ The global setup runs `prisma migrate reset --force` (with `PRISMA_USER_CONSENT_
 The server webServer process receives env vars from `server/.env.test` (injected by `playwright.config.ts`), so it connects to `helpdesk_test` and never touches dev data.
 
 Rate limiting (`express-rate-limit`) is **production-only** (`NODE_ENV === "production"`), so it does not interfere with tests.
+
+**When to write E2E tests:** Only for auth flows, cross-page journeys, real server/DB integration, or behaviour jsdom cannot simulate. Prefer component tests for everything else.
 
 **Writing tests:** Use the `e2e-test-writer` subagent. It has full context on the Playwright setup, test conventions, page object model patterns, and auth helpers for this project.
 

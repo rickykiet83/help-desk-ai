@@ -5,6 +5,7 @@ import { HomePage } from './pages/HomePage';
 import { Layout } from './components/Layout';
 import { LoginPage } from './pages/LoginPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
+import { TicketsPage } from './pages/TicketsPage';
 import { UsersPage } from './pages/UsersPage';
 
 function App() {
@@ -15,6 +16,7 @@ function App() {
 				<Route element={<ProtectedRoute />}>
 					<Route element={<Layout />}>
 						<Route path='/' element={<HomePage />} />
+					<Route path='/tickets' element={<TicketsPage />} />
 						<Route element={<AdminRoute />}>
 							<Route path='/users' element={<UsersPage />} />
 						</Route>

@@ -20,6 +20,7 @@ model User {
   accounts      Account[]
   sessions      Session[]
   tickets       Ticket[]
+  replies       Reply[]
   banned        Boolean?  @default(false)
   banReason     String?
   banExpires    DateTime?
@@ -83,6 +84,19 @@ model Ticket {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
   assignedTo   User?           @relation(fields: [assignedToId], references: [id])
+  replies      Reply[]
+}
+
+model Reply {
+  id         Int        @id @default(autoincrement())
+  body       String
+  senderType SenderType
+  authorId   String?
+  authorName String
+  ticketId   Int
+  createdAt  DateTime   @default(now())
+  ticket     Ticket     @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  author     User?      @relation(fields: [authorId], references: [id])
 }
 
 enum Role {
@@ -100,4 +114,9 @@ enum TicketCategory {
   General_Question
   Technical_Question
   Refund_Request
+}
+
+enum SenderType {
+  Agent
+  Customer
 }

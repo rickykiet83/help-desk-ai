@@ -161,8 +161,9 @@ describe("TicketDetailPage", () => {
 
 		it("renders the ticket status badge", async () => {
 			renderPage();
+			// "Open" also appears as a select option, so use getAllByText and confirm at least one match.
 			await waitFor(() =>
-				expect(screen.getByText(TicketStatus.Open)).toBeInTheDocument(),
+				expect(screen.getAllByText(TicketStatus.Open).length).toBeGreaterThan(0),
 			);
 		});
 
@@ -189,8 +190,9 @@ describe("TicketDetailPage", () => {
 
 		it("renders the ticket category label", async () => {
 			renderPage();
+			// "Technical Question" appears both as a badge span and as a select option.
 			await waitFor(() =>
-				expect(screen.getByText("Technical Question")).toBeInTheDocument(),
+				expect(screen.getAllByText("Technical Question").length).toBeGreaterThan(0),
 			);
 		});
 
@@ -369,10 +371,48 @@ describe("TicketDetailPage", () => {
 			resolvePatch();
 			await waitFor(() => expect(select).not.toBeDisabled());
 		});
+
+		it("disables ALL three selects (Status, Category, Assigned to) while the PATCH is in flight", async () => {
+			let resolvePatch!: () => void;
+			mockAxiosInstance.patch.mockReturnValue(
+				new Promise<void>((resolve) => {
+					resolvePatch = resolve;
+				}),
+			);
+
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Status")).toBeInTheDocument(),
+			);
+
+			const statusSelect = screen.getByLabelText("Status");
+			const categorySelect = screen.getByLabelText("Category");
+			const assignedToSelect = screen.getByLabelText("Assigned to");
+
+			// None should be disabled before interaction
+			expect(statusSelect).not.toBeDisabled();
+			expect(categorySelect).not.toBeDisabled();
+			expect(assignedToSelect).not.toBeDisabled();
+
+			// Trigger the mutation via the status select
+			await userEvent.selectOptions(statusSelect, TicketStatus.Resolved);
+
+			// All three must be disabled while the PATCH is pending
+			await waitFor(() => expect(statusSelect).toBeDisabled());
+			expect(categorySelect).toBeDisabled();
+			expect(assignedToSelect).toBeDisabled();
+
+			// Resolve and verify all three re-enable
+			resolvePatch();
+			await waitFor(() => expect(statusSelect).not.toBeDisabled());
+			expect(categorySelect).not.toBeDisabled();
+			expect(assignedToSelect).not.toBeDisabled();
+		});
 	});
 
 	describe("mutation error state", () => {
-		it("shows 'Failed to update assignment.' when the PATCH request fails", async () => {
+		it("shows 'Failed to update ticket.' when the PATCH request fails", async () => {
 			mockAxiosInstance.patch.mockRejectedValue(
 				new Error("Internal server error"),
 			);
@@ -392,7 +432,30 @@ describe("TicketDetailPage", () => {
 
 			await waitFor(() =>
 				expect(
-					screen.getByText("Failed to update assignment."),
+					screen.getByText("Failed to update ticket."),
+				).toBeInTheDocument(),
+			);
+		});
+
+		it("shows 'Failed to update ticket.' when the status PATCH request fails", async () => {
+			mockAxiosInstance.patch.mockRejectedValue(
+				new Error("Internal server error"),
+			);
+
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Status")).toBeInTheDocument(),
+			);
+
+			await userEvent.selectOptions(
+				screen.getByLabelText("Status"),
+				TicketStatus.Resolved,
+			);
+
+			await waitFor(() =>
+				expect(
+					screen.getByText("Failed to update ticket."),
 				).toBeInTheDocument(),
 			);
 		});
@@ -405,8 +468,152 @@ describe("TicketDetailPage", () => {
 			);
 
 			expect(
-				screen.queryByText("Failed to update assignment."),
+				screen.queryByText("Failed to update ticket."),
 			).not.toBeInTheDocument();
+		});
+	});
+
+	describe("status dropdown", () => {
+		it("renders a Status select with all three options: Open, Resolved, Closed", async () => {
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Status")).toBeInTheDocument(),
+			);
+
+			expect(screen.getByRole("option", { name: TicketStatus.Open })).toBeInTheDocument();
+			expect(screen.getByRole("option", { name: TicketStatus.Resolved })).toBeInTheDocument();
+			expect(screen.getByRole("option", { name: TicketStatus.Closed })).toBeInTheDocument();
+		});
+
+		it("pre-selects the ticket's current status", async () => {
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Status")).toBeInTheDocument(),
+			);
+
+			const select = screen.getByLabelText("Status");
+			expect((select as HTMLSelectElement).value).toBe(TicketStatus.Open);
+		});
+
+		it("calls PATCH /api/tickets/1 with { status: 'Resolved' } when Resolved is selected", async () => {
+			mockAxiosInstance.patch.mockResolvedValue({});
+
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Status")).toBeInTheDocument(),
+			);
+
+			await userEvent.selectOptions(
+				screen.getByLabelText("Status"),
+				TicketStatus.Resolved,
+			);
+
+			await waitFor(() =>
+				expect(mockAxiosInstance.patch).toHaveBeenCalledWith("/api/tickets/1", {
+					status: TicketStatus.Resolved,
+				}),
+			);
+		});
+
+		it("calls PATCH /api/tickets/1 with { status: 'Closed' } when Closed is selected", async () => {
+			mockAxiosInstance.patch.mockResolvedValue({});
+
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Status")).toBeInTheDocument(),
+			);
+
+			await userEvent.selectOptions(
+				screen.getByLabelText("Status"),
+				TicketStatus.Closed,
+			);
+
+			await waitFor(() =>
+				expect(mockAxiosInstance.patch).toHaveBeenCalledWith("/api/tickets/1", {
+					status: TicketStatus.Closed,
+				}),
+			);
+		});
+	});
+
+	describe("category dropdown", () => {
+		it("renders a Category select with an 'Uncategorized' option", async () => {
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Category")).toBeInTheDocument(),
+			);
+
+			expect(screen.getByRole("option", { name: "Uncategorized" })).toBeInTheDocument();
+		});
+
+		it("renders options for all three categories with human-readable labels", async () => {
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Category")).toBeInTheDocument(),
+			);
+
+			expect(screen.getByRole("option", { name: "General Question" })).toBeInTheDocument();
+			expect(screen.getByRole("option", { name: "Technical Question" })).toBeInTheDocument();
+			expect(screen.getByRole("option", { name: "Refund Request" })).toBeInTheDocument();
+		});
+
+		it("pre-selects the ticket's current category", async () => {
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Category")).toBeInTheDocument(),
+			);
+
+			const select = screen.getByLabelText("Category");
+			expect((select as HTMLSelectElement).value).toBe(TicketCategory.Technical_Question);
+		});
+
+		it("calls PATCH /api/tickets/1 with { category: 'General_Question' } when General Question is selected", async () => {
+			mockAxiosInstance.patch.mockResolvedValue({});
+
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Category")).toBeInTheDocument(),
+			);
+
+			await userEvent.selectOptions(
+				screen.getByLabelText("Category"),
+				TicketCategory.General_Question,
+			);
+
+			await waitFor(() =>
+				expect(mockAxiosInstance.patch).toHaveBeenCalledWith("/api/tickets/1", {
+					category: TicketCategory.General_Question,
+				}),
+			);
+		});
+
+		it("calls PATCH /api/tickets/1 with { category: null } when Uncategorized is selected", async () => {
+			mockAxiosInstance.patch.mockResolvedValue({});
+
+			renderPage();
+
+			await waitFor(() =>
+				expect(screen.getByLabelText("Category")).toBeInTheDocument(),
+			);
+
+			await userEvent.selectOptions(
+				screen.getByLabelText("Category"),
+				"",
+			);
+
+			await waitFor(() =>
+				expect(mockAxiosInstance.patch).toHaveBeenCalledWith("/api/tickets/1", {
+					category: null,
+				}),
+			);
 		});
 	});
 });

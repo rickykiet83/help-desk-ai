@@ -1,5 +1,5 @@
 import type { Request, RequestHandler } from "express";
-import { assignTicketSchema, ticketListQuerySchema } from "@helpdesk/core";
+import { ticketListQuerySchema, updateTicketSchema } from "@helpdesk/core";
 
 import { Prisma } from "../generated/prisma/client";
 import { Router } from "express";
@@ -89,7 +89,7 @@ ticketsRouter.get("/:id", (async (req, res) => {
   res.json(ticket);
 }) as RequestHandler);
 
-// PATCH /api/tickets/:id — assign or unassign a ticket
+// PATCH /api/tickets/:id — update assignee, status, or category
 ticketsRouter.patch("/:id", (async (req: Request, res) => {
   const id = Number(req.params.id);
   if (!Number.isInteger(id) || id < 1) {
@@ -97,7 +97,7 @@ ticketsRouter.patch("/:id", (async (req: Request, res) => {
     return;
   }
 
-  const data = validate(assignTicketSchema, req.body, res);
+  const data = validate(updateTicketSchema, req.body, res);
   if (!data) return;
 
   const ticket = await prisma.ticket.findUnique({ where: { id } });
@@ -106,7 +106,7 @@ ticketsRouter.patch("/:id", (async (req: Request, res) => {
     return;
   }
 
-  if (data.assignedToId !== null) {
+  if (data.assignedToId != null) {
     const agent = await prisma.user.findUnique({
       where: { id: data.assignedToId },
       select: { role: true, deletedAt: true },
@@ -119,7 +119,11 @@ ticketsRouter.patch("/:id", (async (req: Request, res) => {
 
   const updated = await prisma.ticket.update({
     where: { id },
-    data: { assignedToId: data.assignedToId },
+    data: {
+      ...(data.assignedToId !== undefined ? { assignedToId: data.assignedToId } : {}),
+      ...(data.status !== undefined ? { status: data.status } : {}),
+      ...(data.category !== undefined ? { category: data.category } : {}),
+    },
     select: {
       id: true,
       subject: true,

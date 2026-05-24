@@ -4,3 +4,4 @@
 - [Router wrapping for useParams components](feedback_router_wrapping.md) — useParams pages need full `<MemoryRouter><Routes><Route>` structure, not just MemoryRouter
 - [Mocking multiple GET endpoints](feedback_multi_endpoint_axios_mock.md) — use mockImplementation with URL switch when component fires multiple GET requests
 - [Testing disabled state during pending mutation](feedback_pending_mutation_test.md) — hold promise with captured resolve, assert disabled, then resolve to avoid state-update leaks
+- [Select option text collides with badge/display text](feedback_select_option_text_collision.md) — new selects can duplicate existing display text; switch getByText to getAllByText or within()

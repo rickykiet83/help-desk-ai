@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router-dom";
 import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate, formatDateTime } from "@/lib/utils";
+import { TicketCategory, TicketStatus } from "@helpdesk/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ArrowLeft } from "lucide-react";
@@ -37,12 +38,12 @@ export function TicketDetailPage() {
 
   const agents = agentsData?.agents ?? [];
 
-  const assignMutation = useMutation({
-    mutationFn: async (assignedToId: string | null) => {
-      await api.patch(`/api/tickets/${id}`, { assignedToId });
+  const updateMutation = useMutation({
+    mutationFn: async (patch: { assignedToId?: string | null; status?: string; category?: string | null }) => {
+      await api.patch(`/api/tickets/${id}`, patch);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+      queryClient.invalidateQueries({ queryKey: ["tickets"] });
     },
   });
 
@@ -116,6 +117,50 @@ export function TicketDetailPage() {
             <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4">
               <div>
                 <label
+                  htmlFor="status"
+                  className="text-xs font-medium uppercase tracking-wide text-gray-400"
+                >
+                  Status
+                </label>
+                <select
+                  id="status"
+                  className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                  value={ticket.status}
+                  disabled={updateMutation.isPending}
+                  onChange={(e) => {
+                    updateMutation.mutateAsync({ status: e.target.value }).catch(() => {});
+                  }}
+                >
+                  {Object.values(TicketStatus).map((s) => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
+                  htmlFor="category"
+                  className="text-xs font-medium uppercase tracking-wide text-gray-400"
+                >
+                  Category
+                </label>
+                <select
+                  id="category"
+                  className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                  value={ticket.category ?? ""}
+                  disabled={updateMutation.isPending}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    updateMutation.mutateAsync({ category: value === "" ? null : value }).catch(() => {});
+                  }}
+                >
+                  <option value="">Uncategorized</option>
+                  {Object.values(TicketCategory).map((c) => (
+                    <option key={c} value={c}>{TICKET_CATEGORY_LABELS[c]}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label
                   htmlFor="assignee"
                   className="text-xs font-medium uppercase tracking-wide text-gray-400"
                 >
@@ -125,10 +170,10 @@ export function TicketDetailPage() {
                   id="assignee"
                   className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
                   value={ticket.assignedToId ?? ""}
-                  disabled={assignMutation.isPending}
+                  disabled={updateMutation.isPending}
                   onChange={(e) => {
                     const value = e.target.value;
-                    assignMutation.mutateAsync(value === "" ? null : value).catch(() => {});
+                    updateMutation.mutateAsync({ assignedToId: value === "" ? null : value }).catch(() => {});
                   }}
                 >
                   <option value="">Unassigned</option>
@@ -138,8 +183,8 @@ export function TicketDetailPage() {
                     </option>
                   ))}
                 </select>
-                {assignMutation.isError && (
-                  <p className="mt-1 text-xs text-red-600">Failed to update assignment.</p>
+                {updateMutation.isError && (
+                  <p className="mt-1 text-xs text-red-600">Failed to update ticket.</p>
                 )}
               </div>
               <div>

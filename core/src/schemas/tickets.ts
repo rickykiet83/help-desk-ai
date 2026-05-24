@@ -36,3 +36,12 @@ export type TicketQuery = z.infer<typeof ticketListQuerySchema>;
 export const assignTicketSchema = z.object({
   assignedToId: z.string().nullable(),
 });
+
+export const updateTicketSchema = z.object({
+  assignedToId: z.string().nullable().optional(),
+  status: z.enum(Object.values(TicketStatus) as [TicketStatus, ...TicketStatus[]]).optional(),
+  category: z
+    .enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]])
+    .nullable()
+    .optional(),
+});

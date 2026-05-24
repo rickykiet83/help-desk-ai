@@ -4,8 +4,10 @@ import { TicketCategory, TicketStatus } from "@helpdesk/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ArrowLeft } from "lucide-react";
-import type { Ticket } from "@helpdesk/core";
+import type { Reply, Ticket } from "@helpdesk/core";
 import axios from "axios";
+import { ReplyThread } from "./ReplyThread";
+import { ReplyForm } from "./ReplyForm";
 
 const api = axios.create({ withCredentials: true });
 
@@ -37,6 +39,17 @@ export function TicketDetailPage() {
   });
 
   const agents = agentsData?.agents ?? [];
+
+  const { data: repliesData } = useQuery<{ replies: Reply[] }>({
+    queryKey: ["tickets", id, "replies"],
+    queryFn: async () => {
+      const res = await api.get<{ replies: Reply[] }>(`/api/tickets/${id}/replies`);
+      return res.data;
+    },
+    enabled: !!id,
+  });
+
+  const replies = repliesData?.replies ?? [];
 
   const updateMutation = useMutation({
     mutationFn: async (patch: { assignedToId?: string | null; status?: string; category?: string | null }) => {
@@ -206,6 +219,22 @@ export function TicketDetailPage() {
               <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
                 {ticket.body}
               </p>
+            </div>
+          </div>
+
+          {/* Reply thread + form */}
+          <div className="rounded-lg border border-gray-200 bg-white">
+            <div className="border-b border-gray-200 px-6 py-3">
+              <p className="text-sm font-medium text-gray-700">
+                Replies{" "}
+                {replies.length > 0 && (
+                  <span className="text-gray-400">({replies.length})</span>
+                )}
+              </p>
+            </div>
+            <ReplyThread replies={replies} />
+            <div className="border-t border-gray-200">
+              <ReplyForm ticketId={ticket.id} />
             </div>
           </div>
         </div>

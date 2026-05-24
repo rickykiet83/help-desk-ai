@@ -23,6 +23,9 @@ export const sortableColumns = ["id", "subject", "status", "category", "createdA
 export const ticketListQuerySchema = z.object({
   sortBy: z.enum(sortableColumns).default("createdAt"),
   order: z.enum(["asc", "desc"]).default("desc"),
+  status: z.enum(Object.values(TicketStatus) as [TicketStatus, ...TicketStatus[]]).optional(),
+  category: z.enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]]).optional(),
+  search: z.string().optional(),
 });
 
 export type TicketQuery = z.infer<typeof ticketListQuerySchema>;

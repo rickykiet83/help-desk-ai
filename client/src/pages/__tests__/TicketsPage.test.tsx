@@ -38,6 +38,7 @@ const mockTickets: Ticket[] = [
 		senderEmail: "jane@example.com",
 		assignedToId: null,
 		createdAt: "2024-01-15T10:00:00.000Z",
+		updatedAt: "2024-01-15T10:00:00.000Z",
 	},
 	{
 		id: 2,
@@ -68,7 +69,7 @@ describe("TicketsPage", () => {
 		renderWithClient(<TicketsPage />);
 		await waitFor(() =>
 			expect(mockAxiosInstance.get).toHaveBeenCalledWith("/api/tickets", {
-				params: { sortBy: "createdAt", order: "desc" },
+				params: { sortBy: "createdAt", order: "desc", page: 1, pageSize: 10 },
 			}),
 		);
 	});

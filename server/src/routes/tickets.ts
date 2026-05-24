@@ -1,8 +1,10 @@
+import type { Request, RequestHandler } from "express";
+import { assignTicketSchema, ticketListQuerySchema } from "@helpdesk/core";
+
 import { Prisma } from "../generated/prisma/client";
-import type { RequestHandler } from "express";
 import { Router } from "express";
 import { prisma } from "../db";
-import { ticketListQuerySchema } from "@helpdesk/core";
+import { validate } from "../lib/validate";
 
 export const ticketsRouter = Router();
 
@@ -43,6 +45,7 @@ ticketsRouter.get("/", (async (req, res) => {
         senderEmail: true,
         assignedToId: true,
         createdAt: true,
+        updatedAt: true,
       },
       orderBy: { [sortBy]: order },
       skip: (page - 1) * pageSize,
@@ -74,6 +77,7 @@ ticketsRouter.get("/:id", (async (req, res) => {
       senderEmail: true,
       assignedToId: true,
       createdAt: true,
+      updatedAt: true,
     },
   });
 
@@ -83,4 +87,52 @@ ticketsRouter.get("/:id", (async (req, res) => {
   }
 
   res.json(ticket);
+}) as RequestHandler);
+
+// PATCH /api/tickets/:id — assign or unassign a ticket
+ticketsRouter.patch("/:id", (async (req: Request, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ error: "Invalid ticket ID" });
+    return;
+  }
+
+  const data = validate(assignTicketSchema, req.body, res);
+  if (!data) return;
+
+  const ticket = await prisma.ticket.findUnique({ where: { id } });
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  if (data.assignedToId !== null) {
+    const agent = await prisma.user.findUnique({
+      where: { id: data.assignedToId },
+      select: { role: true, deletedAt: true },
+    });
+    if (!agent || agent.role !== "agent" || agent.deletedAt !== null) {
+      res.status(422).json({ error: "assignedToId must refer to an active agent" });
+      return;
+    }
+  }
+
+  const updated = await prisma.ticket.update({
+    where: { id },
+    data: { assignedToId: data.assignedToId },
+    select: {
+      id: true,
+      subject: true,
+      body: true,
+      status: true,
+      category: true,
+      senderName: true,
+      senderEmail: true,
+      assignedToId: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  res.json(updated);
 }) as RequestHandler);

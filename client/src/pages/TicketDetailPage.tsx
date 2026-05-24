@@ -1,15 +1,22 @@
 import { Link, useParams } from "react-router-dom";
-import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDateTime } from "@/lib/utils";
+import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate, formatDateTime } from "@/lib/utils";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ArrowLeft } from "lucide-react";
 import type { Ticket } from "@helpdesk/core";
 import axios from "axios";
-import { useQuery } from "@tanstack/react-query";
 
 const api = axios.create({ withCredentials: true });
 
+interface Agent {
+  id: string;
+  name: string;
+  email: string;
+}
+
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
 
   const { data: ticket, isLoading, isError } = useQuery<Ticket>({
     queryKey: ["tickets", id],
@@ -20,8 +27,35 @@ export function TicketDetailPage() {
     enabled: !!id,
   });
 
+  const { data: agentsData } = useQuery<{ agents: Agent[] }>({
+    queryKey: ["agents"],
+    queryFn: async () => {
+      const res = await api.get<{ agents: Agent[] }>("/api/agents");
+      return res.data;
+    },
+  });
+
+  const agents = agentsData?.agents ?? [];
+
+  const assignMutation = useMutation({
+    mutationFn: async (assignedToId: string | null) => {
+      await api.patch(`/api/tickets/${id}`, { assignedToId });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["tickets", id] });
+    },
+  });
+
+  const senderLabel = ticket
+    ? ticket.senderName
+      ? ticket.senderEmail
+        ? `${ticket.senderName} <${ticket.senderEmail}>`
+        : ticket.senderName
+      : (ticket.senderEmail ?? "—")
+    : "—";
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8">
       <Link
         to="/tickets"
         className="mb-6 inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700"
@@ -46,6 +80,7 @@ export function TicketDetailPage() {
 
       {ticket && (
         <div className="space-y-6">
+          {/* Title + badges */}
           <div>
             <h1 className="text-2xl font-semibold text-gray-900">{ticket.subject}</h1>
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-gray-500">
@@ -60,28 +95,73 @@ export function TicketDetailPage() {
                   {TICKET_CATEGORY_LABELS[ticket.category] ?? ticket.category}
                 </span>
               )}
-              <span>{formatDateTime(ticket.createdAt)}</span>
             </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-4 text-sm text-gray-500">
-            <span className="font-medium text-gray-700">From: </span>
-            {ticket.senderName ? (
-              <>
-                {ticket.senderName}
-                {ticket.senderEmail && (
-                  <span className="ml-1 text-gray-400">&lt;{ticket.senderEmail}&gt;</span>
+          {/* 2-column metadata grid */}
+          <div className="grid grid-cols-2 gap-4">
+            {/* Left column */}
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4">
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">From</p>
+                <p className="mt-1 text-sm text-gray-800">{senderLabel}</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Created</p>
+                <p className="mt-1 text-sm text-gray-800">{formatDate(ticket.createdAt)}</p>
+              </div>
+            </div>
+
+            {/* Right column */}
+            <div className="space-y-4 rounded-lg border border-gray-200 bg-white p-4">
+              <div>
+                <label
+                  htmlFor="assignee"
+                  className="text-xs font-medium uppercase tracking-wide text-gray-400"
+                >
+                  Assigned to
+                </label>
+                <select
+                  id="assignee"
+                  className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-1.5 text-sm text-gray-900 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
+                  value={ticket.assignedToId ?? ""}
+                  disabled={assignMutation.isPending}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    assignMutation.mutateAsync(value === "" ? null : value).catch(() => {});
+                  }}
+                >
+                  <option value="">Unassigned</option>
+                  {agents.map((agent) => (
+                    <option key={agent.id} value={agent.id}>
+                      {agent.name}
+                    </option>
+                  ))}
+                </select>
+                {assignMutation.isError && (
+                  <p className="mt-1 text-xs text-red-600">Failed to update assignment.</p>
                 )}
-              </>
-            ) : (
-              ticket.senderEmail ?? "—"
-            )}
+              </div>
+              <div>
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-400">Updated</p>
+                <p className="mt-1 text-sm text-gray-800">{formatDateTime(ticket.updatedAt)}</p>
+              </div>
+            </div>
           </div>
 
-          <div className="rounded-lg border border-gray-200 bg-white p-6">
-            <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
-              {ticket.body}
-            </p>
+          {/* Message card */}
+          <div className="rounded-lg border border-gray-200 bg-white">
+            <div className="border-b border-gray-200 px-6 py-3">
+              <p className="text-sm font-medium text-gray-700">Message</p>
+            </div>
+            <div className="border-b border-gray-200 px-6 py-3">
+              <p className="text-sm text-gray-500">{senderLabel}</p>
+            </div>
+            <div className="px-6 py-5">
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                {ticket.body}
+              </p>
+            </div>
           </div>
         </div>
       )}

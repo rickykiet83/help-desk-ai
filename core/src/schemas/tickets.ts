@@ -14,6 +14,7 @@ export const ticketSchema = z.object({
   senderEmail: z.string().nullable(),
   assignedToId: z.string().nullable(),
   createdAt: z.string(),
+  updatedAt: z.string(),
 });
 
 export type Ticket = z.infer<typeof ticketSchema>;
@@ -31,3 +32,7 @@ export const ticketListQuerySchema = z.object({
 });
 
 export type TicketQuery = z.infer<typeof ticketListQuerySchema>;
+
+export const assignTicketSchema = z.object({
+  assignedToId: z.string().nullable(),
+});

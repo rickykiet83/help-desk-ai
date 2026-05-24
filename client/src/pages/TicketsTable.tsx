@@ -1,5 +1,6 @@
 import { ChevronDown, ChevronUp, ChevronsUpDown } from "lucide-react";
 import type { OnChangeFn, SortingState } from "@tanstack/react-table";
+import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, cn, formatDate } from "@/lib/utils";
 import {
   Table,
   TableBody,
@@ -8,7 +9,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import type { Ticket, TicketCategory, TicketStatus } from "@helpdesk/core";
 import {
   createColumnHelper,
   flexRender,
@@ -16,7 +16,8 @@ import {
   useReactTable,
 } from "@tanstack/react-table";
 
-import { cn } from "@/lib/utils";
+import { Link } from "react-router-dom";
+import type { Ticket } from "@helpdesk/core";
 
 // Augment column meta to support className on <TableHead>
 declare module "@tanstack/react-table" {
@@ -26,25 +27,6 @@ declare module "@tanstack/react-table" {
   }
 }
 
-const STATUS_STYLES: Record<TicketStatus, string> = {
-  Open: "bg-blue-100 text-blue-700",
-  Resolved: "bg-green-100 text-green-700",
-  Closed: "bg-gray-100 text-gray-600",
-};
-
-const CATEGORY_LABELS: Record<TicketCategory, string> = {
-  General_Question: "General",
-  Technical_Question: "Technical",
-  Refund_Request: "Refund",
-};
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
 
 const columnHelper = createColumnHelper<Ticket>();
 
@@ -58,7 +40,14 @@ const columns = [
 	columnHelper.accessor('subject', {
 		header: 'Subject',
 		enableSorting: true,
-		cell: (row) => <span className='max-w-xs truncate font-medium text-gray-900'>{row.getValue()}</span>,
+		cell: (row) => (
+			<Link
+				to={`/tickets/${row.row.original.id}`}
+				className="link font-medium"
+			>
+				{row.getValue()}
+			</Link>
+		),
 	}),
 	columnHelper.accessor((row) => row.senderName ?? row.senderEmail ?? '—', {
 		id: 'senderName',
@@ -71,7 +60,7 @@ const columns = [
 		enableSorting: true,
 		cell: (row) => {
 			const cat = row.getValue();
-			return <span className='text-gray-600'>{cat ? (CATEGORY_LABELS[cat] ?? cat) : '—'}</span>;
+			return <span className='text-gray-600'>{cat ? (TICKET_CATEGORY_LABELS[cat] ?? cat) : '—'}</span>;
 		},
 	}),
 	columnHelper.accessor('status', {
@@ -80,7 +69,7 @@ const columns = [
 		cell: (row) => {
 			const status = row.getValue();
 			return (
-				<span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_STYLES[status]}`}>
+				<span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${TICKET_STATUS_STYLES[status]}`}>
 					{status}
 				</span>
 			);

@@ -128,3 +128,6 @@
     @apply font-sans;
     }
 }
+@utility link {
+  @apply text-foreground hover:underline;
+}

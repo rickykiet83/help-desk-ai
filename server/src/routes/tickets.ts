@@ -53,3 +53,34 @@ ticketsRouter.get("/", (async (req, res) => {
 
   res.json({ tickets, total, page, pageSize });
 }) as RequestHandler);
+
+// GET /api/tickets/:id — get a single ticket by ID
+ticketsRouter.get("/:id", (async (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isInteger(id) || id < 1) {
+    res.status(400).json({ error: "Invalid ticket ID" });
+    return;
+  }
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id },
+    select: {
+      id: true,
+      subject: true,
+      body: true,
+      status: true,
+      category: true,
+      senderName: true,
+      senderEmail: true,
+      assignedToId: true,
+      createdAt: true,
+    },
+  });
+
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  res.json(ticket);
+}) as RequestHandler);

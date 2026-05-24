@@ -18,3 +18,5 @@ export type Reply = z.infer<typeof replySchema>;
 export const createReplySchema = z.object({
   body: z.string().min(1, "Reply cannot be empty"),
 });
+
+export type CreateReplyInput = z.infer<typeof createReplySchema>;

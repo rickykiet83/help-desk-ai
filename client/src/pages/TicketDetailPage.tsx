@@ -1,13 +1,13 @@
+import type { Reply, Ticket } from "@helpdesk/core";
 import { Link, useParams } from "react-router-dom";
 import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate, formatDateTime } from "@/lib/utils";
 import { TicketCategory, TicketStatus } from "@helpdesk/core";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ArrowLeft } from "lucide-react";
-import type { Reply, Ticket } from "@helpdesk/core";
-import axios from "axios";
+import ReplyForm from './ReplyForm';
 import { ReplyThread } from "./ReplyThread";
-import { ReplyForm } from "./ReplyForm";
+import axios from "axios";
 
 const api = axios.create({ withCredentials: true });
 
@@ -234,7 +234,7 @@ export function TicketDetailPage() {
             </div>
             <ReplyThread replies={replies} />
             <div className="border-t border-gray-200">
-              <ReplyForm ticketId={ticket.id} />
+              <ReplyForm ticket={ticket} />
             </div>
           </div>
         </div>

@@ -1,69 +1,82 @@
-import { createReplySchema } from "@helpdesk/core";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import axios from "axios";
+import { CreateReplyInput, Ticket, createReplySchema } from '@helpdesk/core';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-const api = axios.create({ withCredentials: true });
+import { Button } from '@/components/ui/button';
+import ErrorAlert from '@/components/ErrorAlert';
+import ErrorMessage from '@/components/ErrorMessage';
+import { Textarea } from '@/components/ui/textarea';
+import axios from 'axios';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 
-type ReplyFormData = z.infer<typeof createReplySchema>;
-
-interface Props {
-  ticketId: number;
+interface ReplyFormProps {
+	ticket: Ticket;
 }
 
-export function ReplyForm({ ticketId }: Props) {
-  const queryClient = useQueryClient();
+export default function ReplyForm({ ticket }: ReplyFormProps) {
+	const ticketId = ticket.id;
+	const queryClient = useQueryClient();
 
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm<ReplyFormData>({
-    resolver: zodResolver(createReplySchema),
-  });
+	const {
+		register,
+		handleSubmit,
+		reset,
+		getValues,
+		setValue,
+		watch,
+		formState: { errors },
+	} = useForm<CreateReplyInput>({
+		resolver: zodResolver(createReplySchema),
+	});
 
-  const replyMutation = useMutation({
-    mutationFn: async (data: ReplyFormData) => {
-      await api.post(`/api/tickets/${ticketId}/replies`, data);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["tickets", String(ticketId), "replies"] });
-      reset();
-    },
-  });
+	const bodyValue = watch('body');
 
-  return (
-    <form
-      onSubmit={handleSubmit((data) => {
-        replyMutation.mutateAsync(data).catch(() => {});
-      })}
-      className="space-y-3 px-6 py-4"
-    >
-      <textarea
-        {...register("body")}
-        rows={4}
-        placeholder="Write a reply..."
-        disabled={replyMutation.isPending}
-        className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 disabled:opacity-50"
-      />
-      {errors.body && (
-        <p className="text-xs text-red-600">{errors.body.message}</p>
-      )}
-      {replyMutation.isError && (
-        <p className="text-xs text-red-600">Failed to send reply. Please try again.</p>
-      )}
-      <div className="flex justify-end">
-        <button
-          type="submit"
-          disabled={replyMutation.isPending}
-          className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-        >
-          {replyMutation.isPending ? "Sending…" : "Send reply"}
-        </button>
-      </div>
-    </form>
-  );
+	const replyMutation = useMutation({
+		mutationFn: async (data: CreateReplyInput) => {
+			const { data: reply } = await axios.post(`/api/tickets/${ticketId}/replies`, data);
+			return reply;
+		},
+		onSuccess: () => {
+			queryClient.invalidateQueries({ queryKey: ['tickets', String(ticketId), 'replies'] });
+			reset();
+		},
+	});
+
+	const polishMutation = useMutation({
+		mutationFn: async () => {
+			const { data } = await axios.post(`/api/tickets/${ticketId}/replies/polish`, {
+				body: getValues('body'),
+			});
+			return data.body as string;
+		},
+		onSuccess: (polishedText) => {
+			setValue('body', polishedText, { shouldValidate: true });
+		},
+	});
+
+	return (
+		<form onSubmit={handleSubmit((data) => replyMutation.mutate(data))} className='space-y-3'>
+			{replyMutation.error && <ErrorAlert error={replyMutation.error} fallback='Failed to send reply' />}
+			{polishMutation.error && <ErrorAlert error={polishMutation.error} fallback='Failed to polish reply' />}
+
+			<div className='space-y-1'>
+				<Textarea placeholder='Type your reply...' {...register('body')} rows={4} />
+				{errors.body && <ErrorMessage message={errors.body.message} />}
+			</div>
+
+			<div className='flex gap-2'>
+				<Button
+					type='button'
+					variant='outline'
+					disabled={!bodyValue?.trim() || polishMutation.isPending || replyMutation.isPending}
+					onClick={() => polishMutation.mutate()}
+				>
+					{polishMutation.isPending ? 'Polishing...' : 'Polish'}
+				</Button>
+				<Button type='submit' disabled={!bodyValue?.trim() || replyMutation.isPending || polishMutation.isPending}>
+					{replyMutation.isPending ? 'Sending...' : 'Send Reply'}
+				</Button>
+			</div>
+		</form>
+	);
 }

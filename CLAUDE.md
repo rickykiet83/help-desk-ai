@@ -153,6 +153,15 @@ const data = validate(mySchema, req.body, res);
 if (!data) return;
 ```
 
+- For routes with a numeric ID param, use `parseId` from the same file. It converts `req.params.id` to a number, sends `400` if invalid, and returns `null` on failure.
+
+```ts
+import { parseId } from "../lib/validate";
+
+const id = parseId(req.params.id, res);
+if (!id) return;
+```
+
 All client-side forms use **React Hook Form** (`react-hook-form`) with the Zod resolver (`@hookform/resolvers/zod`). Never use uncontrolled `useState` for form fields.
 
 ```tsx

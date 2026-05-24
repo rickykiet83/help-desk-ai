@@ -1,20 +1,17 @@
 import type { Request, RequestHandler } from "express";
+import { parseId, validate } from "../lib/validate";
 
 import type { AuthenticatedRequest } from "../types/express";
 import { Router } from "express";
 import { createReplySchema } from "@helpdesk/core";
 import { prisma } from "../db";
-import { validate } from "../lib/validate";
 
-export const repliesRouter = Router();
+export const repliesRouter = Router({ mergeParams: true });
 
 // GET /api/tickets/:id/replies — list all replies for a ticket
-repliesRouter.get("/:id/replies", (async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id < 1) {
-    res.status(400).json({ error: "Invalid ticket ID" });
-    return;
-  }
+repliesRouter.get("/", (async (req, res) => {
+  const id = parseId(req.params.id, res);
+  if (!id) return;
 
   const ticket = await prisma.ticket.findUnique({ where: { id } });
   if (!ticket) {
@@ -25,6 +22,7 @@ repliesRouter.get("/:id/replies", (async (req, res) => {
   const replies = await prisma.reply.findMany({
     where: { ticketId: id },
     orderBy: { createdAt: "asc" },
+    include: { author: { select: { id: true, name: true } } }
   });
 
   res.json({
@@ -41,13 +39,10 @@ repliesRouter.get("/:id/replies", (async (req, res) => {
 }) as RequestHandler);
 
 // POST /api/tickets/:id/replies — create a new agent reply
-repliesRouter.post("/:id/replies", (async (req: Request, res) => {
+repliesRouter.post("/", (async (req: Request, res) => {
   const authedReq = req as AuthenticatedRequest;
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id < 1) {
-    res.status(400).json({ error: "Invalid ticket ID" });
-    return;
-  }
+  const id = parseId(req.params.id, res);
+  if (!id) return;
 
   const ticket = await prisma.ticket.findUnique({ where: { id } });
   if (!ticket) {

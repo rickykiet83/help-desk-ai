@@ -1,10 +1,10 @@
 import type { Request, RequestHandler } from "express";
+import { parseId, validate } from "../lib/validate";
 import { ticketListQuerySchema, updateTicketSchema } from "@helpdesk/core";
 
 import { Prisma } from "../generated/prisma/client";
 import { Router } from "express";
 import { prisma } from "../db";
-import { validate } from "../lib/validate";
 
 export const ticketsRouter = Router();
 
@@ -59,11 +59,8 @@ ticketsRouter.get("/", (async (req, res) => {
 
 // GET /api/tickets/:id — get a single ticket by ID
 ticketsRouter.get("/:id", (async (req, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id < 1) {
-    res.status(400).json({ error: "Invalid ticket ID" });
-    return;
-  }
+  const id = parseId(req.params.id, res);
+  if (!id) return;
 
   const ticket = await prisma.ticket.findUnique({
     where: { id },
@@ -91,11 +88,8 @@ ticketsRouter.get("/:id", (async (req, res) => {
 
 // PATCH /api/tickets/:id — update assignee, status, or category
 ticketsRouter.patch("/:id", (async (req: Request, res) => {
-  const id = Number(req.params.id);
-  if (!Number.isInteger(id) || id < 1) {
-    res.status(400).json({ error: "Invalid ticket ID" });
-    return;
-  }
+  const id = parseId(req.params.id, res);
+  if (!id) return;
 
   const data = validate(updateTicketSchema, req.body, res);
   if (!data) return;

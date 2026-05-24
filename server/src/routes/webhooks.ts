@@ -1,4 +1,4 @@
-import { TicketStatus, inboundEmailSchema } from "@helpdesk/core";
+import { SenderType, TicketStatus, inboundEmailSchema } from "@helpdesk/core";
 
 import type { RequestHandler } from "express";
 import { Router } from "express";
@@ -10,6 +10,10 @@ import { requireWebhookSecret } from "../middleware/require-webhook-secret";
 export const router = Router();
 
 const upload = multer();
+
+function stripSubjectPrefixes(subject: string): string {
+  return subject.replace(/^(Re:\s*|Fwd:\s*)+/i, "").trim();
+}
 
 router.post(
   "/inbound-email",
@@ -23,13 +27,42 @@ router.post(
     }
 
     const { from, fromName, subject, body } = parsed.data;
+    const normalizedSubject = stripSubjectPrefixes(subject);
 
-    const category = await classifyTicketCategory(subject, body);
-
-    await prisma.ticket.create({
-      data: { subject, body, senderName: fromName, senderEmail: from, category, status: TicketStatus.Open },
+    const existingTicket = await prisma.ticket.findFirst({
+      where: {
+        senderEmail: from,
+        status: { notIn: [TicketStatus.Resolved, TicketStatus.Closed] },
+        subject: { equals: normalizedSubject, mode: "insensitive" },
+      }
     });
 
-    res.json({ received: true });
+    if (existingTicket) {
+      await prisma.reply.create({
+        data: {
+          body,
+          senderType: SenderType.Customer,
+          authorId: null,
+          authorName: fromName ?? from,
+          ticketId: existingTicket.id,
+          userId: null,
+        },
+      });
+      res.status(200).json({ ticket: existingTicket });
+      return;
+    }
+    const category = await classifyTicketCategory(subject, body);
+    const ticket = await prisma.ticket.create({
+      data: {
+        subject: normalizedSubject,
+        body,
+        senderName: fromName,
+        senderEmail: from,
+        category,
+        status: TicketStatus.Open
+      },
+    });
+
+    res.status(201).json({ ticket });
   }) as RequestHandler
 );

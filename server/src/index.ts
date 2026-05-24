@@ -1,6 +1,7 @@
 import "dotenv/config";
 
 import type { AuthenticatedRequest } from './types/express';
+import { agentsRouter } from "./routes/agents";
 import { auth } from "./lib/auth";
 import cors from "cors";
 import express from "express";
@@ -8,11 +9,10 @@ import { healthRouter } from "./routes/health";
 import helmet from "helmet";
 import { prisma } from "./db";
 import rateLimit from "express-rate-limit";
+import { repliesRouter } from "./routes/replies";
 import { requireAdmin } from './middleware/require-admin';
 import { requireAuth } from './middleware/require-auth';
 import { router } from "./routes/webhooks";
-import { agentsRouter } from "./routes/agents";
-import { repliesRouter } from "./routes/replies";
 import { ticketsRouter } from "./routes/tickets";
 import { toNodeHandler } from "better-auth/node";
 import { usersRouter } from "./routes/users";
@@ -59,7 +59,7 @@ app.use("/api/health", healthRouter);
 app.use("/api/webhooks", router);
 app.use("/api/agents", requireAuth as express.RequestHandler, agentsRouter);
 app.use("/api/tickets", requireAuth as express.RequestHandler, ticketsRouter);
-app.use("/api/tickets", requireAuth as express.RequestHandler, repliesRouter);
+app.use("/api/tickets/:id/replies", requireAuth as express.RequestHandler, repliesRouter);
 app.use("/api/users", requireAuth as express.RequestHandler, requireAdmin as express.RequestHandler, usersRouter);
 
 app.get("/api/me", requireAuth, ((req: AuthenticatedRequest, res) => {

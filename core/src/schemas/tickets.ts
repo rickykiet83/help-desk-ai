@@ -1,6 +1,6 @@
-import { z } from "zod";
 import { TicketCategory } from "../constants/ticket-category";
 import { TicketStatus } from "../constants/ticket-status";
+import { z } from "zod";
 
 export const ticketSchema = z.object({
   id: z.number(),
@@ -17,3 +17,12 @@ export const ticketSchema = z.object({
 });
 
 export type Ticket = z.infer<typeof ticketSchema>;
+
+export const sortableColumns = ["id", "subject", "status", "category", "createdAt", "senderName"] as const;
+
+export const ticketListQuerySchema = z.object({
+  sortBy: z.enum(sortableColumns).default("createdAt"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+});
+
+export type TicketQuery = z.infer<typeof ticketListQuerySchema>;

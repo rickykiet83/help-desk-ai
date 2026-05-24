@@ -67,7 +67,9 @@ describe("TicketsPage", () => {
 	it("calls GET /api/tickets on mount", async () => {
 		renderWithClient(<TicketsPage />);
 		await waitFor(() =>
-			expect(mockAxiosInstance.get).toHaveBeenCalledWith("/api/tickets"),
+			expect(mockAxiosInstance.get).toHaveBeenCalledWith("/api/tickets", {
+				params: { sortBy: "createdAt", order: "desc" },
+			}),
 		);
 	});
 

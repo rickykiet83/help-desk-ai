@@ -1,19 +1,14 @@
-import type { Ticket } from "@helpdesk/core";
 import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate } from "@/lib/utils";
+
+import type { Agent, Ticket } from "@helpdesk/core";
 import { UpdateTicket } from "./UpdateTicket";
 
-interface Agent {
-  id: string;
-  name: string;
-  email: string;
-}
-
-interface Props {
+interface TicketDetailProps {
   ticket: Ticket;
   agents: Agent[];
 }
 
-export function TicketDetail({ ticket, agents }: Props) {
+export function TicketDetail({ ticket, agents }: TicketDetailProps) {
   const senderLabel = ticket.senderName
     ? ticket.senderEmail
       ? `${ticket.senderName} <${ticket.senderEmail}>`

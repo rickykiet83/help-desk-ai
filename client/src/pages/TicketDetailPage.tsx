@@ -1,4 +1,4 @@
-import type { Reply, Ticket } from "@helpdesk/core";
+import type { Agent, Reply, Ticket } from "@helpdesk/core";
 
 import { BackLink } from "@/components/BackLink";
 import ErrorAlert from "@/components/ErrorAlert";
@@ -11,12 +11,6 @@ import { useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 
 const api = axios.create({ withCredentials: true });
-
-interface Agent {
-  id: string;
-  name: string;
-  email: string;
-}
 
 export function TicketDetailPage() {
   const { id } = useParams<{ id: string }>();

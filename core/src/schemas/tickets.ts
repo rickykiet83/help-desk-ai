@@ -1,8 +1,9 @@
+import type { Ticket } from "../constants/ticket";
 import { TicketCategory } from "../constants/ticket-category";
 import { TicketStatus } from "../constants/ticket-status";
 import { z } from "zod";
 
-export const ticketSchema = z.object({
+export const ticketSchema: z.ZodType<Ticket> = z.object({
   id: z.number(),
   subject: z.string(),
   body: z.string(),
@@ -16,8 +17,6 @@ export const ticketSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
 });
-
-export type Ticket = z.infer<typeof ticketSchema>;
 
 export const sortableColumns = ["id", "subject", "status", "category", "createdAt", "senderName"] as const;
 
@@ -45,4 +44,3 @@ export const updateTicketSchema = z.object({
     .nullable()
     .optional(),
 });
-

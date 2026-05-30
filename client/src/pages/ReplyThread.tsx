@@ -2,11 +2,11 @@ import type { Reply } from "@helpdesk/core";
 import { SenderType } from "@helpdesk/core";
 import { formatDateTime } from "@/lib/utils";
 
-interface Props {
+interface ReplyThreadProps {
   replies: Reply[];
 }
 
-export function ReplyThread({ replies }: Props) {
+export function ReplyThread({ replies }: ReplyThreadProps) {
   if (replies.length === 0) {
     return (
       <div className="px-6 py-8 text-center text-sm text-gray-400">

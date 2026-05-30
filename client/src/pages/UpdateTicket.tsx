@@ -1,16 +1,10 @@
-import type { Ticket } from "@helpdesk/core";
+import type { Agent, Ticket } from "@helpdesk/core";
 import { TicketCategory, TicketStatus } from "@helpdesk/core";
 import { TICKET_CATEGORY_LABELS, formatDateTime } from "@/lib/utils";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
 
 const api = axios.create({ withCredentials: true });
-
-interface Agent {
-  id: string;
-  name: string;
-  email: string;
-}
 
 interface Props {
   ticket: Ticket;

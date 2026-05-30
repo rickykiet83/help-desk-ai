@@ -1,6 +1,6 @@
+import type { Agent, Ticket } from "@helpdesk/core";
 import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate } from "@/lib/utils";
 
-import type { Agent, Ticket } from "@helpdesk/core";
 import { UpdateTicket } from "./UpdateTicket";
 
 interface TicketDetailProps {

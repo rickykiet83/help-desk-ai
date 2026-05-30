@@ -1,5 +1,7 @@
+export * from "./constants/agent";
 export * from "./constants/ticket-category";
 export * from "./constants/ticket-status";
+export * from "./constants/ticket";
 export * from "./schemas/inbound-email";
 export * from "./schemas/replies";
 export * from "./schemas/role";

@@ -1,12 +1,11 @@
+import type { Agent } from "../constants/agent";
 import { z } from "zod";
 
-export const agentSchema = z.object({
+export const agentSchema: z.ZodType<Agent> = z.object({
   id: z.string(),
   name: z.string(),
   email: z.string(),
 });
-
-export type Agent = z.infer<typeof agentSchema>;
 
 export const createUserSchema = z.object({
   name: z.string().trim().min(3, "Name is required and must be at least 3 characters"),

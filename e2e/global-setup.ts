@@ -37,5 +37,13 @@ export default function globalSetup() {
     env: execEnv,
   });
 
+  console.log("Seeding test tickets...");
+
+  execSync("bun prisma/seed-tickets.ts", {
+    cwd: serverDir,
+    stdio: "inherit",
+    env: execEnv,
+  });
+
   console.log("Test database ready.");
 }

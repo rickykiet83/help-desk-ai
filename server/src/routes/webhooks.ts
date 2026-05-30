@@ -45,7 +45,6 @@ router.post(
           authorId: null,
           authorName: fromName ?? from,
           ticketId: existingTicket.id,
-          userId: null,
         },
       });
       res.status(200).json({ ticket: existingTicket });
@@ -63,6 +62,6 @@ router.post(
       },
     });
 
-    res.status(201).json({ ticket });
+    res.status(200).json({ ticket });
   }) as RequestHandler
 );

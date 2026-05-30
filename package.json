@@ -6,11 +6,11 @@
     "dev": "bun run --filter '*' dev",
     "build": "bun run --filter '*' build",
     "test:unit": "bun run --cwd client vitest run",
-    "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui",
-    "test:e2e:headed": "playwright test --headed",
-    "test:e2e:debug": "playwright test --debug",
-    "test:e2e:report": "playwright show-report e2e/playwright-report"
+    "test:e2e": "bunx playwright test",
+    "test:e2e:ui": "bunx playwright test --ui",
+    "test:e2e:headed": "bunx playwright test --headed",
+    "test:e2e:debug": "bunx playwright test --debug",
+    "test:e2e:report": "bunx playwright show-report e2e/playwright-report"
   },
   "devDependencies": {
     "@playwright/test": "^1.59.1",

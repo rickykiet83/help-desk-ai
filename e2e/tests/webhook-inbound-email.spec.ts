@@ -1,3 +1,13 @@
+/**
+ * E2E tests for POST /api/webhooks/inbound-email
+ *
+ * The endpoint has two branches:
+ *  - New ticket  → 200 { ticket }
+ *  - Existing open ticket with same sender + subject → 200 { ticket } (reply appended)
+ *
+ * Auth: no session required — only the webhook secret (header or query param).
+ */
+
 import * as dotenv from "dotenv";
 import * as path from "path";
 
@@ -9,7 +19,6 @@ const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET ?? "";
 const API_BASE_URL = `http://localhost:${process.env.PORT ?? 3001}`;
 const WEBHOOK_URL = `${API_BASE_URL}/api/webhooks/inbound-email`;
 
-// A valid payload that satisfies inboundEmailSchema
 const validPayload = {
   from: "customer@example.com",
   fromName: "Test Customer",
@@ -17,197 +26,187 @@ const validPayload = {
   body: "Hello, I placed an order last week and have not received it yet.",
 };
 
-// ---------------------------------------------------------------------------
-// Helper — build a multipart form body from a plain object.
-// Playwright's request.post accepts a `multipart` record; every value must be
-// a string, Buffer, or ReadStream.
-// ---------------------------------------------------------------------------
-function toMultipart(fields: Record<string, string>) {
+function multipart(fields: Record<string, string>) {
   return fields;
 }
 
-// ---------------------------------------------------------------------------
-// Tests
-// ---------------------------------------------------------------------------
-
-// These tests create tickets in the DB (and rely on WEBHOOK_SECRET being
-// constant), so serial mode avoids any ordering surprises.
+// Tests create real DB rows — run serially to avoid ordering surprises.
 test.describe.configure({ mode: "serial" });
 
 test.describe("POST /api/webhooks/inbound-email", () => {
+
   // -------------------------------------------------------------------------
-  // Auth / secret checks
+  // Webhook secret validation
   // -------------------------------------------------------------------------
   test.describe("Webhook secret validation", () => {
     test("missing secret returns 401", async ({ request }) => {
-      const response = await request.post(WEBHOOK_URL, {
-        multipart: toMultipart({
-          ...validPayload,
-          // No x-webhook-secret header and no ?secret= query param
-        }),
+      const res = await request.post(WEBHOOK_URL, {
+        multipart: multipart(validPayload),
       });
-
-      expect(response.status()).toBe(401);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      expect(res.status()).toBe(401);
+      expect(await res.json()).toHaveProperty("error");
     });
 
     test("wrong secret in header returns 401", async ({ request }) => {
-      const response = await request.post(WEBHOOK_URL, {
-        headers: {
-          "x-webhook-secret": "this-is-the-wrong-secret",
-        },
-        multipart: toMultipart(validPayload),
+      const res = await request.post(WEBHOOK_URL, {
+        headers: { "x-webhook-secret": "wrong-secret" },
+        multipart: multipart(validPayload),
       });
-
-      expect(response.status()).toBe(401);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      expect(res.status()).toBe(401);
+      expect(await res.json()).toHaveProperty("error");
     });
 
     test("wrong secret in query param returns 401", async ({ request }) => {
-      const response = await request.post(
-        `${WEBHOOK_URL}?secret=wrong-secret`,
-        {
-          multipart: toMultipart(validPayload),
-        }
-      );
-
-      expect(response.status()).toBe(401);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      const res = await request.post(`${WEBHOOK_URL}?secret=wrong-secret`, {
+        multipart: multipart(validPayload),
+      });
+      expect(res.status()).toBe(401);
+      expect(await res.json()).toHaveProperty("error");
     });
   });
 
   // -------------------------------------------------------------------------
-  // Validation — correct secret, bad payload
+  // Payload validation (correct secret, bad body)
   // -------------------------------------------------------------------------
   test.describe("Payload validation", () => {
+    const headers = { "x-webhook-secret": WEBHOOK_SECRET };
+
     test("missing `from` field returns 400", async ({ request }) => {
-      const { from: _omitted, ...withoutFrom } = validPayload;
-
-      const response = await request.post(WEBHOOK_URL, {
-        headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart(withoutFrom),
+      const { from: _, ...payload } = validPayload;
+      const res = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart(payload),
       });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toHaveProperty("error");
     });
 
-    test("invalid email in `from` field returns 400", async ({ request }) => {
-      const response = await request.post(WEBHOOK_URL, {
-        headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart({ ...validPayload, from: "not-an-email" }),
+    test("invalid email in `from` returns 400", async ({ request }) => {
+      const res = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart({ ...validPayload, from: "not-an-email" }),
       });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
-    });
-
-    test("missing `subject` field returns 400", async ({ request }) => {
-      const { subject: _omitted, ...withoutSubject } = validPayload;
-
-      const response = await request.post(WEBHOOK_URL, {
-        headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart(withoutSubject),
-      });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
-    });
-
-    test("missing `body` field returns 400", async ({ request }) => {
-      const { body: _omitted, ...withoutBody } = validPayload;
-
-      const response = await request.post(WEBHOOK_URL, {
-        headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart(withoutBody),
-      });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toHaveProperty("error");
     });
 
     test("missing `fromName` field returns 400", async ({ request }) => {
-      const { fromName: _omitted, ...withoutFromName } = validPayload;
-
-      const response = await request.post(WEBHOOK_URL, {
-        headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart(withoutFromName),
+      const { fromName: _, ...payload } = validPayload;
+      const res = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart(payload),
       });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toHaveProperty("error");
     });
 
-    test("empty body after correct secret returns 400", async ({ request }) => {
-      const response = await request.post(WEBHOOK_URL, {
-        headers: { "x-webhook-secret": WEBHOOK_SECRET },
+    test("missing `subject` field returns 400", async ({ request }) => {
+      const { subject: _, ...payload } = validPayload;
+      const res = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart(payload),
+      });
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toHaveProperty("error");
+    });
+
+    test("missing `body` field returns 400", async ({ request }) => {
+      const { body: _, ...payload } = validPayload;
+      const res = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart(payload),
+      });
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toHaveProperty("error");
+    });
+
+    test("empty multipart body returns 400", async ({ request }) => {
+      const res = await request.post(WEBHOOK_URL, {
+        headers,
         multipart: {},
       });
-
-      expect(response.status()).toBe(400);
-      const body = await response.json();
-      expect(body).toHaveProperty("error");
+      expect(res.status()).toBe(400);
+      expect(await res.json()).toHaveProperty("error");
     });
   });
 
   // -------------------------------------------------------------------------
-  // Happy path
+  // Happy path — new ticket
   // -------------------------------------------------------------------------
-  test.describe("Happy path", () => {
-    test("valid request via header secret returns 200 { received: true }", async ({
-      request,
-    }) => {
-      const response = await request.post(WEBHOOK_URL, {
+  test.describe("Happy path — new ticket", () => {
+    test("valid payload via header secret creates ticket and returns 200", async ({ request }) => {
+      const res = await request.post(WEBHOOK_URL, {
         headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart(validPayload),
+        multipart: multipart({ ...validPayload, subject: "New ticket via header secret" }),
       });
-
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      expect(body).toEqual({ received: true });
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      expect(body).toHaveProperty("ticket");
+      expect(body.ticket).toMatchObject({
+        subject: "New ticket via header secret",
+        senderEmail: validPayload.from,
+        status: "Open",
+      });
     });
 
-    test("valid request via query-param secret returns 200 { received: true }", async ({
-      request,
-    }) => {
-      const response = await request.post(
-        `${WEBHOOK_URL}?secret=${WEBHOOK_SECRET}`,
-        {
-          multipart: toMultipart({
-            ...validPayload,
-            // Use a slightly different subject to distinguish from the test above
-            subject: "Query param secret test",
-          }),
-        }
-      );
-
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      expect(body).toEqual({ received: true });
+    test("valid payload via query-param secret creates ticket and returns 200", async ({ request }) => {
+      const res = await request.post(`${WEBHOOK_URL}?secret=${WEBHOOK_SECRET}`, {
+        multipart: multipart({ ...validPayload, subject: "New ticket via query param" }),
+      });
+      expect(res.status()).toBe(200);
+      expect(await res.json()).toHaveProperty("ticket");
     });
 
-    test("optional bodyHtml field is accepted and request succeeds", async ({
-      request,
-    }) => {
-      const response = await request.post(WEBHOOK_URL, {
+    test("optional bodyHtml field is accepted and returns 200", async ({ request }) => {
+      const res = await request.post(WEBHOOK_URL, {
         headers: { "x-webhook-secret": WEBHOOK_SECRET },
-        multipart: toMultipart({
+        multipart: multipart({
           ...validPayload,
-          bodyHtml: "<p>Hello, I placed an order last week.</p>",
+          subject: "New ticket with bodyHtml",
+          bodyHtml: "<p>Hello</p>",
         }),
       });
+      expect(res.status()).toBe(200);
+      expect(await res.json()).toHaveProperty("ticket");
+    });
 
-      expect(response.status()).toBe(200);
-      const body = await response.json();
-      expect(body).toEqual({ received: true });
+    test("Re: prefix is stripped from the subject", async ({ request }) => {
+      const res = await request.post(WEBHOOK_URL, {
+        headers: { "x-webhook-secret": WEBHOOK_SECRET },
+        multipart: multipart({ ...validPayload, subject: "Re: Stripped subject test" }),
+      });
+      expect(res.status()).toBe(200);
+      const body = await res.json();
+      expect(body.ticket.subject).toBe("Stripped subject test");
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Thread continuation — reply appended to existing open ticket
+  // -------------------------------------------------------------------------
+  test.describe("Thread continuation", () => {
+    const threadSubject = "Thread continuation test ticket";
+    const threadPayload = { ...validPayload, subject: threadSubject };
+
+    test("second email with same sender + subject appends a reply and returns 200", async ({ request }) => {
+      const headers = { "x-webhook-secret": WEBHOOK_SECRET };
+
+      // First email — creates the ticket.
+      const first = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart(threadPayload),
+      });
+      expect(first.status()).toBe(200);
+
+      // Second email — same sender, same subject → reply appended.
+      const second = await request.post(WEBHOOK_URL, {
+        headers,
+        multipart: multipart({ ...threadPayload, body: "This is a follow-up." }),
+      });
+      expect(second.status()).toBe(200);
+      const body = await second.json();
+      expect(body).toHaveProperty("ticket");
+      expect(body.ticket.subject).toBe(threadSubject);
     });
   });
 });

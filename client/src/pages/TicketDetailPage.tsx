@@ -50,7 +50,7 @@ export function TicketDetailPage() {
 
 			{isLoading && <TicketDetailSkeleton />}
 
-			{error && <ErrorAlert message={axios.isAxiosError(error) && error.response?.status === 404 ? 'Ticket not found' : 'Failed to load ticket'} className="mt-8" />}
+			{error && <ErrorAlert message="Ticket not found or failed to load." className="mt-8" />}
 
 			{ticket && (
 				<div className='space-y-6'>

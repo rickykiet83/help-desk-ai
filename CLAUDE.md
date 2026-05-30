@@ -192,14 +192,25 @@ All client-side HTTP requests use **Axios** (`axios`) and all server state is ma
 
 ## Testing Strategy
 
-**Default to component tests.** Write Vitest + RTL component tests for all UI logic — rendering, loading/error/empty states, user interactions, API calls. E2E tests are slow and expensive; use them only for flows that cannot be covered at the component level:
+**Default to component tests.** Write Vitest + RTL component tests for all UI logic. E2E tests are slow, reset the database, and start real servers — treat them as expensive and use them sparingly.
 
-- Auth (login redirects, session persistence across page loads)
-- Multi-step flows that cross multiple pages
-- Real database + server integration (e.g. webhook ingestion end-to-end)
-- Browser-specific behaviour that jsdom cannot simulate
+### Decision rule — unit test vs E2E
 
-Everything else — form validation, API mocking, conditional rendering, mutations — belongs in component tests.
+Write a **unit test** (Vitest + RTL) for anything that can be tested with mocked axios and jsdom:
+- Rendering: loading states, error states, empty states, conditional rendering
+- Form validation (client-side Zod errors)
+- User interactions: clicks, selects, input changes
+- API calls and mutations (mocked with `vi.fn()`)
+- Component props and derived UI logic
+
+Write an **E2E test** (Playwright) only when the behaviour genuinely requires infrastructure that unit tests cannot provide:
+- **Real auth session** — login redirects, session persistence across page loads, logout
+- **Real RBAC** — role-based route guards enforced by Better Auth on the server
+- **Real DB mutations with persistence** — soft-delete/restore surviving a page reload
+- **Real server integration** — webhook ingestion creating DB rows end-to-end
+- **Cross-page flows** — navigating between pages where server state changes between steps
+
+**Never write an E2E test for something already covered by a unit test.** If a component test asserts that "No replies yet." renders when the replies array is empty, do not duplicate that assertion in Playwright. The E2E layer only tests the wiring between browser, server, and database — not the rendering logic itself.
 
 ## Component Testing
 

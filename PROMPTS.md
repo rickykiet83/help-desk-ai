@@ -64,3 +64,8 @@ add the ability to assign a ticket to an agent
 ## Replying to Tickets
 
 add the ability to reply to tickets. On the ticket details page, show the reply thread below the message and add a form to submit new replies.
+
+## Refactoring for Clean Abstractions
+
+- extract the basic details about a ticket (subject, sender, date, message) into a separate component called TicketDetail. Do not include the replies.
+- extract the content of the right column into a separate component called UpdateTicket

@@ -6,6 +6,7 @@ import { classifyTicketCategory } from "../lib/ai";
 import multer from "multer";
 import { prisma } from "../db";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
+import sanitizeHtml from "sanitize-html";
 
 export const router = Router();
 
@@ -26,7 +27,8 @@ router.post(
       return;
     }
 
-    const { from, fromName, subject, body } = parsed.data;
+    const { from, fromName, subject, body, bodyHtml: rawBodyHtml } = parsed.data;
+    const bodyHtml = rawBodyHtml ? sanitizeHtml(rawBodyHtml) : undefined;
     const normalizedSubject = stripSubjectPrefixes(subject);
 
     const existingTicket = await prisma.ticket.findFirst({
@@ -41,6 +43,7 @@ router.post(
       await prisma.reply.create({
         data: {
           body,
+          bodyHtml,
           senderType: SenderType.Customer,
           authorId: null,
           authorName: fromName ?? from,

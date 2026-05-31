@@ -6,6 +6,7 @@ export type SenderType = (typeof SenderType)[keyof typeof SenderType];
 export const replySchema = z.object({
   id: z.number(),
   body: z.string(),
+  bodyHtml: z.string().nullable(),
   senderType: z.enum(["Agent", "Customer"]),
   authorId: z.string().nullable(),
   authorName: z.string(),

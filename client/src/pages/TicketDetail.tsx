@@ -1,5 +1,5 @@
 import type { Agent, Ticket } from "@helpdesk/core";
-import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate } from "@/lib/utils";
+import { TICKET_CATEGORY_LABELS, TICKET_STATUS_STYLES, formatDate, sanitize } from "@/lib/utils";
 
 import { UpdateTicket } from "./UpdateTicket";
 
@@ -62,7 +62,7 @@ export function TicketDetail({ ticket, agents }: TicketDetailProps) {
           <p className="text-sm text-gray-500">{senderLabel}</p>
         </div>
         <div className="px-6 py-5">
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{ticket.body}</p>
+          <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">{sanitize(ticket.body)}</p>
         </div>
       </div>
     </div>

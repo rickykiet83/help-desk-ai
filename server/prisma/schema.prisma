@@ -90,6 +90,7 @@ model Ticket {
 model Reply {
   id         Int        @id @default(autoincrement())
   body       String
+  bodyHtml   String?
   senderType SenderType
   authorId   String?
   authorName String

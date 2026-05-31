@@ -1,6 +1,8 @@
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { formatDateTime, sanitize, sanitizeHtml } from "@/lib/utils";
+
 import type { Reply } from "@helpdesk/core";
 import { SenderType } from "@helpdesk/core";
-import { formatDateTime } from "@/lib/utils";
 
 interface ReplyThreadProps {
   replies: Reply[];
@@ -16,13 +18,14 @@ export function ReplyThread({ replies }: ReplyThreadProps) {
   }
 
   return (
-    <div className="divide-y divide-gray-100">
+    <div className="flex flex-col gap-3 p-4">
       {replies.map((reply) => (
-        <div
+        <Card
           key={reply.id}
-          className={`px-6 py-4 ${reply.senderType === SenderType.Customer ? "bg-gray-50" : ""}`}
+          size="sm"
+          className={reply.senderType === SenderType.Customer ? "bg-gray-50" : ""}
         >
-          <div className="mb-1.5 flex items-center gap-2">
+          <CardHeader className="flex-row items-center gap-2 border-b pb-3">
             <span className="text-sm font-medium text-gray-800">{reply.authorName}</span>
             <span
               className={`rounded-full px-2 py-0.5 text-xs font-medium ${
@@ -34,11 +37,20 @@ export function ReplyThread({ replies }: ReplyThreadProps) {
               {reply.senderType}
             </span>
             <span className="text-xs text-gray-400">{formatDateTime(reply.createdAt)}</span>
-          </div>
-          <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
-            {reply.body}
-          </p>
-        </div>
+          </CardHeader>
+          <CardContent>
+            {reply.bodyHtml ? (
+              <div
+                className="prose prose-sm max-w-none text-gray-700"
+                dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.bodyHtml) }}
+              />
+            ) : (
+              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
+                {sanitize(reply.body)}
+              </p>
+            )}
+          </CardContent>
+        </Card>
       ))}
     </div>
   );

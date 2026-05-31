@@ -1,9 +1,20 @@
+import DOMPurify from "dompurify"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import type { TicketStatus, TicketCategory } from "@helpdesk/core"
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
+}
+
+/** Strip all HTML tags — use for plain-text fields (ticket body, reply body). */
+export function sanitize(text: string): string {
+  return DOMPurify.sanitize(text, { ALLOWED_TAGS: [], ALLOWED_ATTR: [] })
+}
+
+/** Sanitize HTML for safe rendering via dangerouslySetInnerHTML (bodyHtml fields). */
+export function sanitizeHtml(html: string): string {
+  return DOMPurify.sanitize(html)
 }
 
 export const TICKET_STATUS_STYLES: Record<TicketStatus, string> = {

@@ -120,7 +120,8 @@ bunx prisma migrate dev       # Run migrations
 bunx prisma migrate dev --name <name>  # Create new migration
 bunx prisma migrate reset     # Reset database
 bunx prisma db seed           # Seed database (creates admin user)
-bun prisma/seed-tickets.ts    # Seed tickets
+bunx prisma/seed-tickets.ts    # Seed tickets
+bunx prisma/seed-replies.ts    # Seed ticket's replies to simulate long conversation. (change ticket id, agent id if we reset database)
 bunx prisma studio            # Open Prisma Studio GUI
 bunx prisma migrate deploy    # Deploy migrations to production
 ```

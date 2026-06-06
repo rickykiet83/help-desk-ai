@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-A full-stack ticket management system that uses AI (Claude API) to auto-classify, summarize, and suggest replies for support tickets.
+A full-stack ticket management system that uses AI (OpenAI gpt-5-nano) to auto-classify, summarize, and suggest replies for support tickets.
 
 ## Tech Stack
 
@@ -12,7 +12,7 @@ A full-stack ticket management system that uses AI (Claude API) to auto-classify
 | Frontend   | React 18, TypeScript, Vite, Tailwind CSS, Shadcn/ui, React Router v6, Axios, TanStack Query, React Hook Form + Zod  |
 | Backend    | Express 4, TypeScript, Better Auth                                     |
 | Database   | PostgreSQL + Prisma ORM                                                |
-| AI         | Claude API (Anthropic)                                                 |
+| AI         | OpenAI API (gpt-5-nano via `@ai-sdk/openai`)                          |
 | Email      | SendGrid or Mailgun                                                    |
 | Deployment | Docker + cloud provider                                                |
 
@@ -317,7 +317,7 @@ PORT=3001
 CLIENT_URL=http://localhost:5173
 BETTER_AUTH_URL=http://localhost:3001
 DATABASE_URL=postgresql://user:pass@localhost:5432/helpdesk
-ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-proj-...
 BETTER_AUTH_SECRET=""
 SEED_ADMIN_EMAIL="admin@example.com"
 SEED_ADMIN_PASSWORD="password123"

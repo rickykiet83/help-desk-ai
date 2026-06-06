@@ -11,6 +11,7 @@ export const ticketSchema: z.ZodType<Ticket> = z.object({
   category: z
     .enum(Object.values(TicketCategory) as [TicketCategory, ...TicketCategory[]])
     .nullable(),
+  aiSummary: z.string().nullable(),
   senderName: z.string().nullable(),
   senderEmail: z.string().nullable(),
   assignedToId: z.string().nullable(),

@@ -7,6 +7,7 @@ export interface Ticket {
   body: string;
   status: TicketStatus;
   category: TicketCategory | null;
+  aiSummary: string | null;
   senderName: string | null;
   senderEmail: string | null;
   assignedToId: string | null;

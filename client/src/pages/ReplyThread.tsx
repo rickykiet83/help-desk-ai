@@ -35,7 +35,7 @@ export function ReplyThread({ replies }: ReplyThreadProps) {
 								dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.bodyHtml) }}
 							/>
 						) : (
-							<p className='whitespace-pre-wrap text-sm leading-relaxed text-gray-700'>{sanitize(reply.body)}</p>
+							<p className='text-sm leading-relaxed text-gray-700'>{sanitize(reply.body)}</p>
 						)}
 					</CardContent>
 				</Card>

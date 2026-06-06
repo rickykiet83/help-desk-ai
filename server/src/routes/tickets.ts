@@ -5,6 +5,7 @@ import { ticketListQuerySchema, updateTicketSchema } from "@helpdesk/core";
 import { Prisma } from "../generated/prisma/client";
 import { Router } from "express";
 import { prisma } from "../db";
+import { summarizeTicket } from "../lib/ai";
 
 export const ticketsRouter = Router();
 
@@ -41,6 +42,7 @@ ticketsRouter.get("/", (async (req, res) => {
         body: true,
         status: true,
         category: true,
+        aiSummary: true,
         senderName: true,
         senderEmail: true,
         assignedToId: true,
@@ -133,4 +135,34 @@ ticketsRouter.patch("/:id", (async (req: Request, res) => {
   });
 
   res.json(updated);
+}) as RequestHandler);
+
+// POST /api/tickets/:id/summarize — generate or regenerate an AI summary
+ticketsRouter.post("/:id/summarize", (async (req: Request, res) => {
+  const id = parseId(req.params.id, res);
+  if (!id) return;
+
+  const ticket = await prisma.ticket.findUnique({
+    where: { id },
+    include: {
+      replies: {
+        orderBy: { createdAt: "asc" },
+        select: { senderType: true, authorName: true, body: true },
+      },
+    },
+  });
+
+  if (!ticket) {
+    res.status(404).json({ error: "Ticket not found" });
+    return;
+  }
+
+  const summary = await summarizeTicket(ticket.subject, ticket.body, ticket.replies);
+
+  await prisma.ticket.update({
+    where: { id },
+    data: { aiSummary: summary },
+  });
+
+  res.json({ summary });
 }) as RequestHandler);

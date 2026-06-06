@@ -18,40 +18,28 @@ export function ReplyThread({ replies }: ReplyThreadProps) {
   }
 
   return (
-    <div className="flex flex-col gap-3 p-4">
-      {replies.map((reply) => (
-        <Card
-          key={reply.id}
-          size="sm"
-          className={reply.senderType === SenderType.Customer ? "bg-gray-50" : ""}
-        >
-          <CardHeader className="flex-row items-center gap-2 border-b pb-3">
-            <span className="text-sm font-medium text-gray-800">{reply.authorName}</span>
-            <span
-              className={`rounded-full px-2 py-0.5 text-xs font-medium ${
-                reply.senderType === SenderType.Agent
-                  ? "bg-blue-100 text-blue-700"
-                  : "bg-gray-200 text-gray-600"
-              }`}
-            >
-              {reply.senderType}
-            </span>
-            <span className="text-xs text-gray-400">{formatDateTime(reply.createdAt)}</span>
-          </CardHeader>
-          <CardContent>
-            {reply.bodyHtml ? (
-              <div
-                className="prose prose-sm max-w-none text-gray-700"
-                dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.bodyHtml) }}
-              />
-            ) : (
-              <p className="whitespace-pre-wrap text-sm leading-relaxed text-gray-700">
-                {sanitize(reply.body)}
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      ))}
-    </div>
-  );
+		<div className='flex flex-col gap-3'>
+			{replies.map((reply) => (
+				<Card key={reply.id} size='sm' className={reply.senderType === SenderType.Customer ? 'bg-gray-50' : 'px-3'}>
+					<CardHeader className='flex-row items-center gap-4 border-b pb-4'>
+						<span className='text-sm font-medium text-gray-800'>{reply.authorName}</span>
+						<span
+							className={`rounded-full py-0.5 text-xs font-medium`}
+						>{reply.senderType} - {formatDateTime(reply.createdAt)}
+						</span>
+					</CardHeader>
+					<CardContent>
+						{reply.bodyHtml ? (
+							<div
+								className='prose prose-sm max-w-none text-gray-700'
+								dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.bodyHtml) }}
+							/>
+						) : (
+							<p className='whitespace-pre-wrap text-sm leading-relaxed text-gray-700'>{sanitize(reply.body)}</p>
+						)}
+					</CardContent>
+				</Card>
+			))}
+		</div>
+	);
 }

@@ -1,27 +1,28 @@
 {
   "permissions": {
     "allow": [
-			"mcp__context7__resolve-library-id",
-			"mcp__context7__query-docs",
-			"Bash(bun install:*)",
-			"Bash(bun run:*)",
-			"Bash(echo \"EXIT: $?\")",
-			"Bash(xargs kill:*)",
-			"Bash(bun add:*)",
-			"Bash(bunx prisma:*)",
-			"Bash(bun remove:*)",
-			"Bash(npx shadcn@latest:*)",
-			"WebFetch(domain:www.better-auth.com)",
-			"WebFetch(domain:better-auth.com)",
-			"Bash(bun test:e2e:*)",
-			"Bash(bunx shadcn@latest:*)",
-			"Bash(bunx vitest:*)",
-			"WebFetch(domain:medium.com)",
-			"Bash(openssl rand:*)",
-			"Bash(node -e ':*)",
-			"Bash(curl -s -X POST http://localhost:3001/api/webhooks/inbound-email -F 'from=Jane Smith <jane@example.com>' -F 'subject=I need a refund for order #1234' -F 'stripped-text=Hi, I purchased order #1234 last week and would like a refund please.' -F timestamp=__TRACKED_VAR__ -F token=__TRACKED_VAR__ -F signature=__TRACKED_VAR__)",
-			"Bash(bunx playwright:*)",
-			"Bash(bun prisma/seed-tickets.ts)"
-		]
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__query-docs",
+      "Bash(bun install:*)",
+      "Bash(bun run:*)",
+      "Bash(echo \"EXIT: $?\")",
+      "Bash(xargs kill:*)",
+      "Bash(bun add:*)",
+      "Bash(bunx prisma:*)",
+      "Bash(bun remove:*)",
+      "Bash(npx shadcn@latest:*)",
+      "WebFetch(domain:www.better-auth.com)",
+      "WebFetch(domain:better-auth.com)",
+      "Bash(bun test:e2e:*)",
+      "Bash(bunx shadcn@latest:*)",
+      "Bash(bunx vitest:*)",
+      "WebFetch(domain:medium.com)",
+      "Bash(openssl rand:*)",
+      "Bash(node -e ':*)",
+      "Bash(curl -s -X POST http://localhost:3001/api/webhooks/inbound-email -F 'from=Jane Smith <jane@example.com>' -F 'subject=I need a refund for order #1234' -F 'stripped-text=Hi, I purchased order #1234 last week and would like a refund please.' -F timestamp=__TRACKED_VAR__ -F token=__TRACKED_VAR__ -F signature=__TRACKED_VAR__)",
+      "Bash(bunx playwright:*)",
+      "Bash(bun prisma/seed-tickets.ts)",
+      "Bash(bun tsc:*)"
+    ]
   }
 }

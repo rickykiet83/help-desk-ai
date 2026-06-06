@@ -46,25 +46,22 @@ export function TicketDetailPage() {
 
   return (
 		<div className='mx-auto max-w-4xl px-4 py-8'>
-			<BackLink to="/tickets" label="Back to tickets" />
+			<BackLink to='/tickets' label='Back to tickets' />
 
 			{isLoading && <TicketDetailSkeleton />}
 
-			{error && <ErrorAlert message="Ticket not found or failed to load." className="mt-8" />}
+			{error && <ErrorAlert message='Ticket not found or failed to load.' className='mt-8' />}
 
 			{ticket && (
 				<div className='space-y-6'>
 					<TicketDetail ticket={ticket} agents={agents} />
 
 					{/* Reply thread + form */}
-					<div className='rounded-lg border border-gray-200 bg-white'>
-						<div className='border-b border-gray-200 px-6 py-3'>
-							<p className='text-sm font-medium text-gray-700'>
-								Replies {replies.length > 0 && <span className='text-gray-400'>({replies.length})</span>}
-							</p>
-						</div>
-						<ReplyThread replies={replies} />
-					</div>
+					<p className='text-sm font-medium text-gray-700'>
+						Replies {replies.length > 0 && <span className='text-gray-400'>({replies.length})</span>}
+					</p>
+
+					<ReplyThread replies={replies} />
 
 					<div className='rounded-lg border border-gray-200 bg-white'>
 						<ReplyForm ticket={ticket} />

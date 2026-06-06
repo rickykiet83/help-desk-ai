@@ -64,7 +64,7 @@ export default function ReplyForm({ ticket }: ReplyFormProps) {
 				{errors.body && <ErrorMessage message={errors.body.message} />}
 			</div>
 
-			<div className='flex gap-2'>
+			<div className='flex gap-2 p-3'>
 				<Button
 					type='button'
 					variant='outline'

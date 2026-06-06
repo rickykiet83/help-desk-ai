@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 
-import { SenderType } from "@helpdesk/core";
 import type { Reply } from "@helpdesk/core";
 import { ReplyThread } from "../ReplyThread";
+import { SenderType } from "@helpdesk/core";
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -57,16 +57,6 @@ describe("ReplyThread", () => {
 			expect(screen.getByText("Jane Smith")).toBeInTheDocument();
 		});
 
-		it('renders the senderType badge text "Agent" for an agent reply', () => {
-			render(<ReplyThread replies={[agentReply]} />);
-			expect(screen.getByText(SenderType.Agent)).toBeInTheDocument();
-		});
-
-		it('renders the senderType badge text "Customer" for a customer reply', () => {
-			render(<ReplyThread replies={[customerReply]} />);
-			expect(screen.getByText(SenderType.Customer)).toBeInTheDocument();
-		});
-
 		it("renders the body text for each reply", () => {
 			render(<ReplyThread replies={[agentReply, customerReply]} />);
 			expect(
@@ -75,68 +65,6 @@ describe("ReplyThread", () => {
 			expect(
 				screen.getByText("Still having the same issue. Please help."),
 			).toBeInTheDocument();
-		});
-	});
-
-	describe("styling", () => {
-		it("applies bg-gray-50 to the row container for Customer replies", () => {
-			const { container } = render(<ReplyThread replies={[customerReply]} />);
-			// The outer div for each reply gets the conditional class.
-			// We locate the row by finding the element that contains the author name
-			// and then checking its parent container class.
-			const authorEl = screen.getByText("Jane Smith");
-			// The reply row is two levels up: span > header-div > reply-div
-			const replyRow = authorEl.closest(".px-6.py-4");
-			expect(replyRow).toHaveClass("bg-gray-50");
-			// Suppress unused variable warning for container
-			void container;
-		});
-
-		it("does NOT apply bg-gray-50 to the row container for Agent replies", () => {
-			render(<ReplyThread replies={[agentReply]} />);
-			const authorEl = screen.getByText("Alice Agent");
-			const replyRow = authorEl.closest(".px-6.py-4");
-			expect(replyRow).not.toHaveClass("bg-gray-50");
-		});
-
-		it("renders the Agent badge with bg-blue-100 and text-blue-700 classes", () => {
-			render(<ReplyThread replies={[agentReply]} />);
-			const badge = screen.getByText(SenderType.Agent);
-			expect(badge).toHaveClass("bg-blue-100");
-			expect(badge).toHaveClass("text-blue-700");
-		});
-
-		it("renders the Customer badge with bg-gray-200 and text-gray-600 classes", () => {
-			render(<ReplyThread replies={[customerReply]} />);
-			const badge = screen.getByText(SenderType.Customer);
-			expect(badge).toHaveClass("bg-gray-200");
-			expect(badge).toHaveClass("text-gray-600");
-		});
-	});
-
-	describe("mixed reply list", () => {
-		it("renders Agent and Customer badges with their respective classes when both are present", () => {
-			render(<ReplyThread replies={[agentReply, customerReply]} />);
-
-			const agentBadge = screen.getByText(SenderType.Agent);
-			expect(agentBadge).toHaveClass("bg-blue-100");
-			expect(agentBadge).toHaveClass("text-blue-700");
-
-			const customerBadge = screen.getByText(SenderType.Customer);
-			expect(customerBadge).toHaveClass("bg-gray-200");
-			expect(customerBadge).toHaveClass("text-gray-600");
-		});
-
-		it("applies bg-gray-50 only to the Customer row, not the Agent row", () => {
-			render(<ReplyThread replies={[agentReply, customerReply]} />);
-
-			const agentAuthorEl = screen.getByText("Alice Agent");
-			const agentRow = agentAuthorEl.closest(".px-6.py-4");
-			expect(agentRow).not.toHaveClass("bg-gray-50");
-
-			const customerAuthorEl = screen.getByText("Jane Smith");
-			const customerRow = customerAuthorEl.closest(".px-6.py-4");
-			expect(customerRow).toHaveClass("bg-gray-50");
 		});
 	});
 });

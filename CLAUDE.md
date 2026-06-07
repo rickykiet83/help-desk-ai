@@ -100,6 +100,14 @@ bun test:e2e               # Run Playwright tests (resets test DB, seeds, starts
 
 Always import and use `Role`, `TicketStatus`, and `TicketCategory` from `@helpdesk/core` — never use bare string literals. This applies to both client and server. The Prisma-generated enums (`@/generated/prisma/enums`) are not the canonical source; `@helpdesk/core` is.
 
+When you need Prisma model types (e.g. `Ticket`, `User`, `Reply`), import them from `@/generated/prisma/client` — not from the individual model files under `@/generated/prisma/models/`.
+
+```ts
+import type { Ticket } from "@/generated/prisma/client";
+// ✓ Pick<Ticket, "subject" | "body">
+// ✗ import from "@/generated/prisma/models/Ticket"
+```
+
 ```ts
 import { Role, TicketStatus, TicketCategory } from "@helpdesk/core";
 // ✓ Role.admin, Role.agent

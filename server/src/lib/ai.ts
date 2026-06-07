@@ -1,4 +1,3 @@
-import { TicketCategory } from "@/generated/prisma/enums";
 import { generateText } from "ai";
 import { openai } from "@ai-sdk/openai";
 
@@ -6,29 +5,6 @@ interface ReplyForSummary {
   senderType: string;
   authorName: string;
   body: string;
-}
-
-export async function classifyTicketCategory(
-  subject: string,
-  body: string
-): Promise<TicketCategory | null> {
-  try {
-    const { text } = await generateText({
-      model: openai("gpt-5-nano"),
-      messages: [
-        {
-          role: "user",
-          content: `Classify this support email into exactly one of these categories: General_Question, Technical_Question, Refund_Request.\nSubject: ${subject}\nBody: ${body}\nReply with only the category name.`,
-        },
-      ],
-    });
-    if (Object.values(TicketCategory).includes(text.trim() as TicketCategory)) {
-      return text.trim() as TicketCategory;
-    }
-  } catch {
-    // fall through — category is optional on Ticket
-  }
-  return null;
 }
 
 export async function summarizeTicket(

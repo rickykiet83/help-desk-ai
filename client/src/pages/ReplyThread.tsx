@@ -20,7 +20,7 @@ export function ReplyThread({ replies }: ReplyThreadProps) {
   return (
 		<div className='flex flex-col gap-3'>
 			{replies.map((reply) => (
-				<Card key={reply.id} size='sm' className={reply.senderType === SenderType.Customer ? 'bg-gray-50' : 'px-3'}>
+				<Card key={reply.id} size='sm' className={reply.senderType === SenderType.Customer ? 'bg-gray-50' : 'ml-9 px-3'}>
 					<CardHeader className='flex-row items-center gap-4 border-b pb-4'>
 						<span className='text-sm font-medium text-gray-800'>{reply.authorName}</span>
 						<span

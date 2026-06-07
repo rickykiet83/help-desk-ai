@@ -2,7 +2,7 @@ import { SenderType, TicketStatus, inboundEmailSchema } from "@helpdesk/core";
 
 import type { RequestHandler } from "express";
 import { Router } from "express";
-import { classifyTicketCategory } from "../lib/ai";
+import { classifyTicketCategory } from "../lib/classify-ticket";
 import multer from "multer";
 import { prisma } from "../db";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
@@ -53,18 +53,22 @@ router.post(
       res.status(200).json({ ticket: existingTicket });
       return;
     }
-    const category = await classifyTicketCategory(subject, body);
     const ticket = await prisma.ticket.create({
       data: {
         subject: normalizedSubject,
         body,
         senderName: fromName,
         senderEmail: from,
-        category,
         status: TicketStatus.Open
       },
     });
 
     res.status(200).json({ ticket });
+
+    classifyTicketCategory(ticket).then((category) => {
+      if (category) {
+        prisma.ticket.update({ where: { id: ticket.id }, data: { category } }).catch(() => { });
+      }
+    }).catch(() => { });
   }) as RequestHandler
 );

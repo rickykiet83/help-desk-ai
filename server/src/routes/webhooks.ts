@@ -2,13 +2,13 @@ import { SenderType, TicketStatus, inboundEmailSchema } from "@helpdesk/core";
 
 import type { RequestHandler } from "express";
 import { Router } from "express";
-import { classifyTicketCategory } from "../lib/classify-ticket";
 import multer from "multer";
 import { prisma } from "../db";
 import { requireWebhookSecret } from "../middleware/require-webhook-secret";
 import sanitizeHtml from "sanitize-html";
+import { sendClassifyJob } from "../lib/queue";
 
-export const router = Router();
+export const webhookRouter = Router();
 
 const upload = multer();
 
@@ -16,7 +16,7 @@ function stripSubjectPrefixes(subject: string): string {
   return subject.replace(/^(Re:\s*|Fwd:\s*)+/i, "").trim();
 }
 
-router.post(
+webhookRouter.post(
   "/inbound-email",
   upload.none() as RequestHandler,
   requireWebhookSecret as RequestHandler,
@@ -63,12 +63,8 @@ router.post(
       },
     });
 
-    res.status(200).json({ ticket });
+    await sendClassifyJob(ticket);
 
-    classifyTicketCategory(ticket).then((category) => {
-      if (category) {
-        prisma.ticket.update({ where: { id: ticket.id }, data: { category } }).catch(() => { });
-      }
-    }).catch(() => { });
+    res.status(200).json({ ticket });
   }) as RequestHandler
 );

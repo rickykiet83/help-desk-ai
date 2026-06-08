@@ -1,5 +1,7 @@
 import "dotenv/config";
 
+import { startQueue, stopQueue } from "./lib/queue";
+
 import type { AuthenticatedRequest } from './types/express';
 import { agentsRouter } from "./routes/agents";
 import { auth } from "./lib/auth";
@@ -12,10 +14,10 @@ import rateLimit from "express-rate-limit";
 import { repliesRouter } from "./routes/replies";
 import { requireAdmin } from './middleware/require-admin';
 import { requireAuth } from './middleware/require-auth';
-import { router } from "./routes/webhooks";
 import { ticketsRouter } from "./routes/tickets";
 import { toNodeHandler } from "better-auth/node";
 import { usersRouter } from "./routes/users";
+import { webhookRouter } from "./routes/webhooks";
 
 if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 32) {
   console.error("FATAL: BETTER_AUTH_SECRET is missing or too short. Refusing to start.");
@@ -25,7 +27,6 @@ if (!process.env.BETTER_AUTH_SECRET || process.env.BETTER_AUTH_SECRET.length < 3
 if (!process.env.WEBHOOK_SECRET) {
   console.warn("Warning: WEBHOOK_SECRET is not set.");
 }
-
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -56,7 +57,7 @@ app.all("/api/auth/{*any}", (req, res, next) => toNodeHandler(auth)(req, res).ca
 app.use(express.json());
 
 app.use("/api/health", healthRouter);
-app.use("/api/webhooks", router);
+app.use("/api/webhooks", webhookRouter);
 app.use("/api/agents", requireAuth as express.RequestHandler, agentsRouter);
 app.use("/api/tickets", requireAuth as express.RequestHandler, ticketsRouter);
 app.use("/api/tickets/:id/replies", requireAuth as express.RequestHandler, repliesRouter);
@@ -67,9 +68,29 @@ app.get("/api/me", requireAuth, ((req: AuthenticatedRequest, res) => {
   res.json({ user: { id, email, name, role } });
 }) as express.RequestHandler);
 
-app.listen(PORT, async () => {
-  await prisma.$connect();
-  console.log(`Server running on http://localhost:${PORT}`);
+
+async function boot() {
+  await startQueue();
+
+  const server = app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+
+  const shutdown = async () => {
+    console.log("Shutting down...");
+    server.close();
+    await stopQueue();
+    process.exit(0);
+  };
+
+  process.on("SIGTERM", shutdown);
+  process.on("SIGINT", shutdown);
+}
+
+boot().catch((error) => {
+  console.error("Failed to start server:", error);
+  process.exit(1);
 });
+
 
 export default app;
